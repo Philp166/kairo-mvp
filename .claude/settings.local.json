@@ -32,7 +32,8 @@
       "Read(//c/Users/philip/AppData/Roaming/com.vercel.cli/**)",
       "Read(//c/Users/philip/AppData/Local/**)",
       "Read(//c/Users/philip/.config/**)",
-      "Bash(npm i *)"
+      "Bash(npm i *)",
+      "Bash(VITE_BASE=/kairo-mvp/ npm run build)"
     ]
   }
 }
