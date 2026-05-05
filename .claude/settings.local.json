@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__mcp-obsidian__obsidian_simple_search",
+      "mcp__mcp-obsidian__obsidian_list_files_in_dir",
+      "mcp__mcp-obsidian__obsidian_get_file_contents",
+      "Bash(unzip -l \"C:/Users/philip/Desktop/KAIRO PROJ/files \\(1\\).zip\")",
+      "Bash(npm --version)",
+      "Bash(npm create *)",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npm run *)",
+      "mcp__Claude_Preview__preview_start",
+      "Bash(powershell -Command 'Get-NetTCPConnection -LocalPort 5173,5174 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force -ErrorAction SilentlyContinue }; Write-Output '\\\\''cleared'\\\\''')",
+      "mcp__c542e0cb-6d18-4c71-b907-cd7758a02c5d__read_file_content",
+      "Bash(python3 -c ' *)",
+      "Bash(python scripts/gen_sprites.py)",
+      "Bash(pio --version)",
+      "Bash(g++ --version)",
+      "Bash(where cl *)",
+      "Bash(where clang *)",
+      "Read(//c/Users/philip/.claude/skills/ui-ux-pro-max/**)",
+      "Bash(python scripts/search.py \"fitness wearable smartwatch dashboard premium minimalism kids health\" --design-system -p \"Kairo\")",
+      "Bash(python scripts/search.py \"health wearable wellness premium minimalism Apple Fitness Oura Whoop dark interface\" --design-system -p \"Kairo Watch\")",
+      "Bash(python scripts/search.py \"tabular metric display dashboard data visualization premium\" --domain typography)",
+      "Bash(git --version)",
+      "Bash(gh --version)",
+      "Bash(vercel --version)",
+      "Bash(netlify --version)",
+      "Bash(npx vercel *)"
+    ]
+  }
+}

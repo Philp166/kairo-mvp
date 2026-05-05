@@ -1,0 +1,119 @@
+/* Spark animations — Layer 1 (idle) + Layer 2 (events).
+   Each animation respects prefers-reduced-motion. */
+
+.spark-face {
+  transform-origin: 70px 70px;
+  transform-box: fill-box;
+  will-change: transform;
+}
+
+.spark-blink-overlay {
+  opacity: 0;
+}
+
+@keyframes spark-breathe-calm {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.96); }
+}
+@keyframes spark-breathe-active {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.94); }
+}
+@keyframes spark-breathe-sleepy {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(0.975); }
+}
+@keyframes spark-breathe-worried {
+  0%   { transform: scale(1); }
+  18%  { transform: scale(0.95); }
+  28%  { transform: scale(0.95); }   /* micro-stop */
+  45%  { transform: scale(1); }
+  60%  { transform: scale(0.97); }
+  100% { transform: scale(1); }
+}
+
+.spark-breathe-calm    { animation: spark-breathe-calm    2s   ease-in-out infinite; }
+.spark-breathe-active  { animation: spark-breathe-active  1s   ease-in-out infinite; }
+.spark-breathe-sleepy  { animation: spark-breathe-sleepy  3.3s ease-in-out infinite; }
+.spark-breathe-worried { animation: spark-breathe-worried 1.4s ease-in-out infinite; }
+
+/* Calm blink — closed-eye overlay shows briefly every ~5s */
+@keyframes spark-blink {
+  0%, 93%, 100% { opacity: 0; }
+  95%, 98%      { opacity: 1; }
+}
+.spark-blink {
+  animation: spark-blink 5s infinite;
+}
+
+/* Active spark pulse — indicator opacity + scale */
+@keyframes spark-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.35; transform: scale(0.85); }
+}
+.spark-pulse {
+  transform-origin: 92px 36px;
+  transform-box: fill-box;
+  animation: spark-pulse 1s ease-in-out infinite;
+}
+
+/* Sleepy Z — drifts up and fades, 3s loop */
+@keyframes spark-z-float {
+  0%   { transform: translate(0, 0);    opacity: 1; }
+  70%  { transform: translate(0, -6px); opacity: 0.4; }
+  100% { transform: translate(0, -12px); opacity: 0; }
+}
+.spark-z-float {
+  animation: spark-z-float 3s ease-out infinite;
+}
+
+/* Worried exclamation — irregular blink */
+@keyframes spark-excl-blink {
+  0%, 30%, 100% { opacity: 1; }
+  40%, 55%      { opacity: 0.25; }
+  60%, 100%     { opacity: 1; }
+}
+.spark-excl-blink {
+  animation: spark-excl-blink 1.4s ease-in-out infinite;
+}
+
+/* Parent-touch heart — pop in, hold, fade */
+@keyframes spark-heart-pop {
+  0%   { transform: scale(0.3); opacity: 0; }
+  18%  { transform: scale(1.15); opacity: 1; }
+  28%  { transform: scale(1);    opacity: 1; }
+  80%  { transform: scale(1);    opacity: 1; }
+  100% { transform: scale(1.4);  opacity: 0; }
+}
+.spark-heart {
+  transform-origin: 70px 70px;
+  transform-box: fill-box;
+  animation: spark-heart-pop 1.5s ease-out forwards;
+}
+
+/* Goal celebration — small bounce */
+@keyframes spark-bounce {
+  0%, 100% { transform: translateY(0); }
+  30%      { transform: translateY(-6px); }
+  60%      { transform: translateY(0); }
+}
+.spark-bounce {
+  animation: spark-bounce 0.6s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spark-breathe-calm,
+  .spark-breathe-active,
+  .spark-breathe-sleepy,
+  .spark-breathe-worried,
+  .spark-blink,
+  .spark-pulse,
+  .spark-z-float,
+  .spark-excl-blink,
+  .spark-bounce {
+    animation: none !important;
+  }
+  .spark-heart {
+    animation: spark-heart-pop 0.4s linear forwards;
+  }
+}

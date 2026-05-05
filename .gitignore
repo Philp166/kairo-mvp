@@ -1,0 +1,35 @@
+# deps & build
+**/node_modules/
+**/dist/
+**/build/
+**/.vite/
+**/.cache/
+**/.turbo/
+**/.next/
+**/.parcel-cache/
+
+# firmware build
+firmware/**/.pio/
+firmware/**/.platformio/
+
+# editor / OS
+.DS_Store
+Thumbs.db
+*.log
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# secrets / env
+.env
+.env.local
+.env.*.local
+
+# misc working files
+files (1).zip
+_spec_extracted.txt
+_spec_chunk_*.md
+
+# vercel
+.vercel/
