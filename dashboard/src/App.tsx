@@ -8,6 +8,7 @@ import { LiveMap } from './components/LiveMap'
 import { WellnessReport } from './components/WellnessReport'
 import { ToastHost, type ToastSpec } from './components/Toast'
 import { WatchPage } from './components/WatchPage'
+import { BriefPage } from './components/BriefPage'
 import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
 import { HugIcon, SchoolIcon } from './components/icons'
@@ -36,6 +37,10 @@ function App() {
   if (hash.startsWith('#watch')) {
     const watchChildId = hash.split('/')[1]
     return <WatchPage childId={watchChildId} />
+  }
+  if (hash.startsWith('#brief')) {
+    const briefChildId = hash.split('/')[1]
+    return <BriefPage childId={briefChildId} />
   }
   return <DashboardPage />
 }
@@ -403,8 +408,34 @@ function DashboardPage() {
           </div>
         </section>
 
-        {/* Watch link */}
-        <section>
+        {/* Cross-page links */}
+        <section className="grid sm:grid-cols-2 gap-3">
+          <a
+            href={`#brief/${child.id}`}
+            className="block rounded-2xl border border-app-line bg-app-surface p-5 sm:p-6 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <div>
+                <div className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-1">
+                  Paediatrician brief
+                </div>
+                <div className="text-base font-medium">
+                  Longitudinal record →
+                </div>
+                <div className="text-xs text-app-muted mt-1">
+                  {child.record.monthsTracked} months · printable for the next visit
+                </div>
+              </div>
+              <div className="hidden sm:flex size-12 rounded-xl bg-app-line items-center justify-center text-app-ink">
+                <svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1={9} y1={13} x2={15} y2={13} />
+                  <line x1={9} y1={17} x2={13} y2={17} />
+                </svg>
+              </div>
+            </div>
+          </a>
           <a
             href={`#watch/${child.id}`}
             className="block rounded-2xl border border-app-line bg-app-surface p-5 sm:p-6 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
@@ -418,7 +449,7 @@ function DashboardPage() {
                   Open watch preview →
                 </div>
                 <div className="text-xs text-app-muted mt-1">
-                  5-screen carousel as on the wrist
+                  Four faces — glanceable, no notifications
                 </div>
               </div>
               <div className="hidden sm:block">

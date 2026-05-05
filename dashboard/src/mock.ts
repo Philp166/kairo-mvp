@@ -34,6 +34,49 @@ export interface ChildSnapshot {
   tempDeltaSeries: number[] // delta vs 14d baseline °C
   sleepScoreSeries: number[]
   stepsDailySeries: number[]
+  /** Longitudinal record — for the paediatrician brief screen. */
+  record: {
+    monthsTracked: number
+    totalNights: number
+    modules: BriefModule[]
+    /** Annotated key events on the timeline */
+    annotations: BriefAnnotation[]
+    /** "3 things to bring up at next visit" — generated from anomalies */
+    conversationPrompts: BriefPrompt[]
+    /** 24-month rolling resting HR (one point per month) */
+    restingHrMonths: number[]
+    /** 24-month rolling avg sleep score */
+    sleepMonths: number[]
+    /** 24-month avg nightly SpO₂ */
+    spo2Months: number[]
+    /** 24-month avg HRV */
+    hrvMonths: number[]
+  }
+}
+
+export type BriefModuleStatus = 'monitoring' | 'flagged' | 'resolved' | 'paused'
+
+export interface BriefModule {
+  id: string
+  /** clinical-context name e.g. "Sleep architecture" */
+  name: string
+  status: BriefModuleStatus
+  /** ISO month "2025-09" */
+  activeSince: string
+  summary: string
+}
+
+export interface BriefAnnotation {
+  /** "2031-09" or "2031-09-12" */
+  date: string
+  kind: 'milestone' | 'flag' | 'consult' | 'context'
+  title: string
+  body: string
+}
+
+export interface BriefPrompt {
+  topic: string
+  evidence: string
 }
 
 function genHrSeries(profile: 'mash' | 'art' = 'mash'): number[] {
@@ -96,6 +139,16 @@ function genSleepScoreSeries(days: number, profile: 'mash' | 'art' = 'mash'): nu
   const out: number[] = []
   for (let i = 0; i < days; i++) {
     out.push(Math.round(base + Math.sin(i * 0.4) * 6 + Math.cos(i * 0.9) * 3))
+  }
+  return out
+}
+
+function genMonthly(start: number, drift: number, months: number, profile: 'mash' | 'art' = 'mash'): number[] {
+  const out: number[] = []
+  const offset = profile === 'art' ? -2 : 0
+  for (let i = 0; i < months; i++) {
+    const v = start + drift * i + Math.sin(i * 0.6) * 1.6 + Math.cos(i * 0.35) * 1.0 + offset
+    out.push(+v.toFixed(1))
   }
   return out
 }
@@ -263,6 +316,90 @@ export const mockChildren: ChildSnapshot[] = [
     tempDeltaSeries: genTempDeltaSeries(30),
     sleepScoreSeries: genSleepScoreSeries(30, 'mash'),
     stepsDailySeries: genStepsDailySeries(30, 8000),
+    record: {
+      monthsTracked: 38,
+      totalNights: 1142,
+      modules: [
+        {
+          id: 'sleep-arch',
+          name: 'Sleep architecture',
+          status: 'monitoring',
+          activeSince: '2023-02',
+          summary: 'Stable. Deep-sleep share trending up since 2024.',
+        },
+        {
+          id: 'hrv-stress',
+          name: 'HRV / autonomic balance',
+          status: 'flagged',
+          activeSince: '2024-08',
+          summary: 'Five-week dip during recent academic period.',
+        },
+        {
+          id: 'resp-spo2',
+          name: 'Respiratory (nightly SpO₂)',
+          status: 'monitoring',
+          activeSince: '2023-02',
+          summary: 'Within typical range. No desaturations 2 wks.',
+        },
+        {
+          id: 'circadian',
+          name: 'Circadian timing',
+          status: 'monitoring',
+          activeSince: '2024-01',
+          summary: 'Bedtime drifted +35 min over 8 weeks.',
+        },
+      ],
+      annotations: [
+        {
+          date: '2023-02',
+          kind: 'milestone',
+          title: 'Started tracking',
+          body: 'Band first paired. Baselines established over 14 days.',
+        },
+        {
+          date: '2023-11',
+          kind: 'context',
+          title: 'Started school',
+          body: 'Sleep onset shifted earlier; HR baseline edged down.',
+        },
+        {
+          date: '2024-04',
+          kind: 'consult',
+          title: 'Routine paediatrician visit',
+          body: 'Annual brief shared. No follow-up flagged.',
+        },
+        {
+          date: '2025-09',
+          kind: 'flag',
+          title: 'HRV dip · 5 weeks',
+          body: 'Autonomic balance trended low during exam period. Resolved after autumn break.',
+        },
+        {
+          date: '2026-04',
+          kind: 'context',
+          title: 'New baseline computed',
+          body: '14-day rolling baselines re-anchored after growth spurt.',
+        },
+      ],
+      conversationPrompts: [
+        {
+          topic: 'HRV trend over the last 5 weeks',
+          evidence: 'Nightly RMSSD averaging 38 ms vs personal baseline of 44 ms.',
+        },
+        {
+          topic: 'Bedtime drift since February',
+          evidence: 'Sleep onset moved from 21:35 → 22:10. Total sleep down ~25 min.',
+        },
+        {
+          topic: 'Skin temperature pattern',
+          evidence: '3 nights with Δ ≥ 0.2 °C in the last 14 days. No fever events.',
+        },
+      ],
+      restingHrMonths: genMonthly(82, 0.18, 24, 'mash'),
+      sleepMonths: genMonthly(78, 0.12, 24, 'mash'),
+      spo2Months: genMonthly(97.4, 0.01, 24, 'mash'),
+      hrvMonths: genMonthly(40, 0.15, 24, 'mash'),
+    },
   },
   {
     id: 'artyom',
@@ -301,6 +438,67 @@ export const mockChildren: ChildSnapshot[] = [
     tempDeltaSeries: genTempDeltaSeries(30),
     sleepScoreSeries: genSleepScoreSeries(30, 'art'),
     stepsDailySeries: genStepsDailySeries(30, 6000),
+    record: {
+      monthsTracked: 14,
+      totalNights: 412,
+      modules: [
+        {
+          id: 'sleep-arch',
+          name: 'Sleep architecture',
+          status: 'monitoring',
+          activeSince: '2025-03',
+          summary: 'Long total sleep typical for age. Stable.',
+        },
+        {
+          id: 'resp-spo2',
+          name: 'Respiratory (nightly SpO₂)',
+          status: 'monitoring',
+          activeSince: '2025-03',
+          summary: 'Mean nightly 97 %. No flagged dips.',
+        },
+        {
+          id: 'activity-load',
+          name: 'Daytime activity',
+          status: 'monitoring',
+          activeSince: '2025-04',
+          summary: 'Active 4–6 h/day. Above typical for age range.',
+        },
+      ],
+      annotations: [
+        {
+          date: '2025-03',
+          kind: 'milestone',
+          title: 'Started tracking',
+          body: 'Band paired at 3 yo. Baselines anchored over 14 days.',
+        },
+        {
+          date: '2025-11',
+          kind: 'context',
+          title: 'Started kindergarten',
+          body: 'Daytime activity rose; nightly sleep length stayed stable.',
+        },
+        {
+          date: '2026-02',
+          kind: 'consult',
+          title: 'Routine paediatrician visit',
+          body: 'First annual brief shared. Growth and sleep on track.',
+        },
+      ],
+      conversationPrompts: [
+        {
+          topic: 'Activity load — well above peer band',
+          evidence: 'Steady 6 200 daily steps avg over 12 weeks.',
+        },
+        {
+          topic: 'Long sleep duration',
+          evidence: '10 h 04 m avg total. Within healthy range for age 4.',
+        },
+      ],
+      restingHrMonths: genMonthly(96, -0.15, 24, 'art'),
+      sleepMonths: genMonthly(82, 0.05, 24, 'art'),
+      spo2Months: genMonthly(97.6, 0.0, 24, 'art'),
+      hrvMonths: genMonthly(48, 0.2, 24, 'art'),
+    },
   },
 ]
 
