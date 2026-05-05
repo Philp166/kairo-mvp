@@ -27,7 +27,6 @@ export interface ChildSnapshot {
   events: KairoEvent[]
   sleep: SleepNight
   zones: GeoZone[]
-  lastMessage: { emoji: string; text: string; ts: string } | null
   /** Wellness report series — last N days, oldest first. */
   reportDays: number
   hrvSeries: number[]      // RMSSD ms
@@ -258,7 +257,6 @@ export const mockChildren: ChildSnapshot[] = [
     events: mashaEvents,
     sleep: genSleepNight('mash', '22:30', '07:42', 552),
     zones: mashaZones,
-    lastMessage: null,
     reportDays: 30,
     hrvSeries: genHrvSeries(30, 'mash'),
     spo2NightSeries: genSpo2NightSeries(30),
@@ -297,7 +295,6 @@ export const mockChildren: ChildSnapshot[] = [
     events: artEvents,
     sleep: genSleepNight('art', '21:00', '07:18', 618),
     zones: artZones,
-    lastMessage: { emoji: '⭐', text: 'Great job', ts: '2 h ago' },
     reportDays: 30,
     hrvSeries: genHrvSeries(30, 'art'),
     spo2NightSeries: genSpo2NightSeries(30),

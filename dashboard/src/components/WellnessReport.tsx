@@ -1,46 +1,60 @@
 /**
- * Wellness summary report — covers the metrics flagged in the spec
- * (§5.2 sampling table + §5.3 sleep classifier + §10 risk register):
- *   - Resting HR + range
- *   - HRV (RMSSD, nightly)
- *   - Nightly SpO₂ mean (ODI3 driver per spec)
- *   - Skin temp deviation vs 14-day baseline (alert at ±0.2 °C)
- *   - Sleep score / architecture
- *   - Daily steps (active minutes proxy)
+ * Wellness summary report — single source of truth for parent-facing
+ * physiological data. Replaces the older "Now" tile grid + standalone HR
+ * chart so each metric appears once.
  *
- * Three windows: 1d (today snapshot), 7d, 30d. Each card shows the headline
- * value, a sub-line with min/avg/max for the window, and a tiny sparkline.
+ * Layout (per /ui-ux-pro-max — premium minimalism, Apple Fitness vibe):
+ *   Hero strip       — band freshness: battery, wear time, last sync
+ *   Range tabs       — Day / Week / Month
+ *   Six metric cards — HR, HRV, SpO₂, Skin temp, Sleep, Activity
+ *   Disclaimer       — wellness, not medical
+ *
+ * Spec anchors:
+ *   §5.2 sampling table  — HR / SpO₂ / temp / steps cadences
+ *   §5.3 sleep classifier — Sleep score from 30-sec epochs
+ *   §10 risk register     — temp Δ ≥ 0.2 °C and SpO₂ < 95 % alert thresholds
+ *
+ * The component intentionally keeps language *informational* — it surfaces
+ * patterns to inform paediatrician conversations, never replaces them.
  */
 
 import { useState } from 'react'
 import { Sparkline } from './Sparkline'
+import { WearTimeRing } from './WearTimeRing'
 import {
   HeartIcon,
   LungsIcon,
   ThermometerIcon,
   StepsIcon,
   MoonIcon,
+  BatteryIcon,
   GoalIcon,
 } from './icons'
 
 export type ReportRange = '1d' | '7d' | '30d'
 
 interface WellnessReportProps {
+  // current snapshot
   hr: number
   hrBaseline: number
+  spo2: number
+  tempC: number
+  tempBaseline: number
+  steps: number
+  stepsGoal: number
+  // band freshness
+  battery: number
+  wearPct: number
+  lastSync: string
+  // multi-window history
   hrSeries: number[]
   hrSeriesWeek: number[]
   hrSeriesMonth: number[]
   hrvSeries: number[]
-  spo2: number
   spo2NightSeries: number[]
-  tempC: number
-  tempBaseline: number
   tempDeltaSeries: number[]
   sleepScore: number
   sleepScoreSeries: number[]
-  steps: number
-  stepsGoal: number
   stepsDailySeries: number[]
 }
 
@@ -64,20 +78,25 @@ function trim(arr: number[], range: ReportRange): number[] {
   return arr
 }
 
-function fmtDelta(v: number, units = '') {
-  const s = v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2)
-  return `${s}${units}`
+function fmtDelta(v: number) {
+  return v > 0 ? `+${v.toFixed(2)}` : v.toFixed(2)
+}
+
+function sleepWord(score: number): string {
+  if (score >= 88) return 'restful'
+  if (score >= 75) return 'good'
+  if (score >= 62) return 'okay'
+  if (score >= 50) return 'restless'
+  return 'rough'
 }
 
 export function WellnessReport(p: WellnessReportProps) {
-  const [range, setRange] = useState<ReportRange>('7d')
+  const [range, setRange] = useState<ReportRange>('1d')
 
-  // HR window data
   const hrWindow =
     range === '1d' ? p.hrSeries : range === '7d' ? p.hrSeriesWeek : p.hrSeriesMonth
   const hrStats = stats(hrWindow)
 
-  // HRV / SpO2 / temp / sleep / steps — series are daily and ≥30 entries
   const hrvWin = trim(p.hrvSeries, range)
   const spo2Win = trim(p.spo2NightSeries, range)
   const tempWin = trim(p.tempDeltaSeries, range)
@@ -91,13 +110,43 @@ export function WellnessReport(p: WellnessReportProps) {
   const sleepStats = stats(sleepWin)
   const stepsAvg = stats(stepsWin).avg
 
-  // ⚑ thresholds straight from spec
   const tempBreach = tempMaxAbs >= 0.2
   const spo2Low = spo2Stats.min < 95
+  const stepsPctToday = Math.round((p.steps / p.stepsGoal) * 100)
+
+  const batteryColor =
+    p.battery < 15 ? 'text-app-red' : p.battery < 30 ? 'text-app-orange' : 'text-app-green'
 
   return (
     <div>
-      <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+      {/* ── Hero strip: band freshness ──────────────────────────────── */}
+      <div className="flex flex-wrap items-center gap-3 mb-5 rounded-2xl bg-app-surface border border-app-line px-5 py-3.5">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className={batteryColor}>
+            <BatteryIcon width={14} height={14} />
+          </span>
+          <div className="leading-tight">
+            <div className="text-[10px] uppercase tracking-[0.1em] text-app-muted">Battery</div>
+            <div className="text-sm font-medium tabular">{p.battery}%</div>
+          </div>
+        </div>
+        <div className="h-7 w-px bg-app-line shrink-0" />
+        <div className="flex items-center gap-2 min-w-0">
+          <WearTimeRing pct={p.wearPct} size={20} />
+          <div className="leading-tight">
+            <div className="text-[10px] uppercase tracking-[0.1em] text-app-muted">Worn</div>
+            <div className="text-sm font-medium tabular">{Math.round(p.wearPct * 100)}%</div>
+          </div>
+        </div>
+        <div className="h-7 w-px bg-app-line shrink-0" />
+        <div className="leading-tight min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.1em] text-app-muted">Last sync</div>
+          <div className="text-sm font-medium truncate">{p.lastSync}</div>
+        </div>
+      </div>
+
+      {/* ── Title row + range tabs ──────────────────────────────────── */}
+      <div className="flex items-baseline justify-between mb-2 gap-3 flex-wrap">
         <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">
           Wellness report
         </h2>
@@ -118,6 +167,12 @@ export function WellnessReport(p: WellnessReportProps) {
         </div>
       </div>
 
+      <p className="text-xs text-app-muted mb-4 max-w-xl leading-relaxed">
+        Gentle patterns over time. Kids aren't projects — these signals exist
+        to help conversations with your paediatrician, not to optimise anyone.
+      </p>
+
+      {/* ── Six metric cards ────────────────────────────────────────── */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
         <Card
           title="Heart rate"
@@ -125,11 +180,7 @@ export function WellnessReport(p: WellnessReportProps) {
           accent="text-app-red"
           value={range === '1d' ? `${p.hr}` : `${Math.round(hrStats.avg)}`}
           unit="bpm"
-          sub={
-            range === '1d'
-              ? `range ${Math.round(hrStats.min)}–${Math.round(hrStats.max)} · baseline ${p.hrBaseline}`
-              : `${Math.round(hrStats.min)}–${Math.round(hrStats.max)} · baseline ${p.hrBaseline}`
-          }
+          sub={`${Math.round(hrStats.min)}–${Math.round(hrStats.max)} · usually around ${p.hrBaseline}`}
           chart={<Sparkline data={hrWindow} color="#FF3B30" width={88} height={26} />}
         />
 
@@ -139,7 +190,9 @@ export function WellnessReport(p: WellnessReportProps) {
           accent="text-app-blue"
           value={`${Math.round(hrvStats.avg)}`}
           unit="ms"
-          sub={`RMSSD · ${Math.round(hrvStats.min)}–${Math.round(hrvStats.max)} ${range === '1d' ? 'last night' : 'over period'}`}
+          sub={`RMSSD · ${Math.round(hrvStats.min)}–${Math.round(hrvStats.max)} ${
+            range === '1d' ? 'last night' : 'over period'
+          }`}
           chart={<Sparkline data={hrvWin} color="#007AFF" width={88} height={26} />}
         />
 
@@ -149,7 +202,9 @@ export function WellnessReport(p: WellnessReportProps) {
           accent={spo2Low ? 'text-app-orange' : 'text-app-green'}
           value={range === '1d' ? `${p.spo2}` : spo2Stats.avg.toFixed(1)}
           unit="%"
-          sub={`min ${spo2Stats.min.toFixed(1)} · ${spo2Low ? 'check ODI₃' : 'normal ≥ 95'}`}
+          sub={`min ${spo2Stats.min.toFixed(1)} · ${
+            spo2Low ? 'lower than usual — share with paediatrician' : 'within typical range'
+          }`}
           chart={<Sparkline data={spo2Win} color="#34C759" width={88} height={26} />}
         />
 
@@ -161,8 +216,8 @@ export function WellnessReport(p: WellnessReportProps) {
           unit={range === '1d' ? '°C' : '°C Δ'}
           sub={
             tempBreach
-              ? `peak Δ ${tempMaxAbs.toFixed(2)}° · alert threshold ±0.20°`
-              : `baseline ${p.tempBaseline.toFixed(1)}° · max Δ ${tempMaxAbs.toFixed(2)}°`
+              ? `swing of ${tempMaxAbs.toFixed(2)}° — wider than usual, keep an eye out`
+              : `usually ${p.tempBaseline.toFixed(1)}° · steady`
           }
           chart={
             <Sparkline
@@ -178,9 +233,15 @@ export function WellnessReport(p: WellnessReportProps) {
           title="Sleep"
           icon={<MoonIcon width={14} height={14} />}
           accent="text-app-blue"
-          value={range === '1d' ? `${p.sleepScore}` : `${Math.round(sleepStats.avg)}`}
-          unit="/100"
-          sub={`min ${Math.round(sleepStats.min)} · max ${Math.round(sleepStats.max)} · ${range === '1d' ? 'last night' : 'avg over period'}`}
+          value={
+            range === '1d'
+              ? sleepWord(p.sleepScore)
+              : sleepWord(Math.round(sleepStats.avg))
+          }
+          unit={range === '1d' ? 'last night' : 'most nights'}
+          sub={`mostly ${sleepWord(Math.round(sleepStats.avg))} · sometimes ${sleepWord(
+            Math.round(sleepStats.min),
+          )}`}
           chart={<Sparkline data={sleepWin} color="#5AC8FA" width={88} height={26} />}
         />
 
@@ -188,19 +249,28 @@ export function WellnessReport(p: WellnessReportProps) {
           title="Activity"
           icon={<StepsIcon width={14} height={14} />}
           accent="text-app-green"
-          value={range === '1d' ? p.steps.toLocaleString('en') : Math.round(stepsAvg).toLocaleString('en')}
-          unit="steps"
-          sub={`goal ${p.stepsGoal.toLocaleString('en')} · ${range === '1d' ? `${Math.round((p.steps / p.stepsGoal) * 100)}% today` : `avg ${Math.round((stepsAvg / p.stepsGoal) * 100)}%`}`}
-          chart={
-            <Sparkline data={stepsWin} color="#34C759" width={88} height={26} fill />
+          value={
+            range === '1d'
+              ? p.steps.toLocaleString('en')
+              : Math.round(stepsAvg).toLocaleString('en')
           }
+          unit="steps"
+          sub={
+            range === '1d'
+              ? stepsPctToday >= 100
+                ? `daily goal hit · ${p.stepsGoal.toLocaleString('en')}`
+                : `goal ${p.stepsGoal.toLocaleString('en')} · plenty of day left`
+              : `goal ${p.stepsGoal.toLocaleString('en')} · usually ${Math.round((stepsAvg / p.stepsGoal) * 100)}% there`
+          }
+          chart={<Sparkline data={stepsWin} color="#34C759" width={88} height={26} fill />}
         />
       </div>
 
-      <p className="mt-4 text-[11px] text-app-muted px-1 flex items-center gap-1.5">
+      <p className="mt-4 text-[11px] text-app-muted px-1 flex items-center gap-1.5 leading-relaxed">
         <GoalIcon width={11} height={11} />
-        Wellness signals only — not a medical diagnosis. Talk to a paediatrician
-        if anything looks off for more than 2 days.
+        Wellness signals only — Kairo doesn't diagnose, prescribe, or replace
+        clinical assessment. Worth flagging to your paediatrician if a pattern
+        sticks for 2+ days.
       </p>
     </div>
   )

@@ -1,18 +1,13 @@
 /**
- * Kairo watch faces — premium OLED minimalism.
+ * Kairo watch faces — Spark palette (terracotta screen, cream bezel).
  *
- * Carousel: Spark Avatar → Clock → Heart rate → Steps → Parent message.
+ * Carousel: Spark Avatar → Clock → Heart rate → Steps. Per spec ethics:
+ * "Kairo doesn't push notifications, messages, or social feeds to the
+ * child's wrist." So no message screen — just the four functional faces.
+ *
  * 140×140 viewBox; on real AMOLED the firmware scales 1 viewBox-unit ≈ 2.93 px.
- *
- * Design system (chosen via /ui-ux-pro-max for "health wearable, premium"):
- *   - Background:   #0B0B12  (true OLED black, indigo cast)
- *   - Surface lift: #15151E
- *   - Ink:          #FAFAFA / #A1A1AA / #52525B
- *   - HR (rose):    #F43F5E
- *   - Steps (lime): #22C55E
- *   - In-range:     #34D399
- *   - Message:      #A78BFA
- * Typography: Space Grotesk for display numerics, Inter for UI labels.
+ * Display ink: indigo-black on terracotta. Typography: Space Grotesk for
+ * display numerics, Inter for UI labels.
  */
 
 import { useEffect, useState } from 'react'
@@ -25,28 +20,21 @@ interface WatchPreviewProps {
   stepsGoal: number
   hr: number
   hrBaseline?: number
-  stepsSeries?: number[]
-  message?: string | null
-  messageEmoji?: string | null
-  /** Sender label: "FROM {messageFrom}" (e.g. "mom"). */
-  messageFrom?: string
-  messageAgo?: string
   now?: Date
   size?: number
   bare?: boolean
   childName?: string
 }
 
-type Screen = 'spark' | 'clock' | 'hr' | 'steps' | 'message'
+type Screen = 'spark' | 'clock' | 'hr' | 'steps'
 
-const screens: Screen[] = ['spark', 'clock', 'hr', 'steps', 'message']
+const screens: Screen[] = ['spark', 'clock', 'hr', 'steps']
 
 const screenLabels: Record<Screen, string> = {
   spark: 'Spark',
   clock: 'Clock',
   hr: 'Heart rate',
   steps: 'Steps',
-  message: 'Message',
 }
 
 export function WatchPreview({
@@ -55,11 +43,6 @@ export function WatchPreview({
   stepsGoal,
   hr,
   hrBaseline = 86,
-  stepsSeries,
-  message,
-  messageEmoji,
-  messageFrom = 'mom',
-  messageAgo = 'just now',
   now,
   size = 160,
   bare = false,
@@ -113,18 +96,7 @@ export function WatchPreview({
           {screen === 'spark' && <SparkV1 state={state} size={size} />}
           {screen === 'clock' && <ClockFace size={size} now={time} />}
           {screen === 'hr' && <HRFace size={size} hr={hr} baseline={hrBaseline} />}
-          {screen === 'steps' && (
-            <StepsFace size={size} steps={steps} goal={stepsGoal} series={stepsSeries} />
-          )}
-          {screen === 'message' && (
-            <MessageFace
-              size={size}
-              text={message ?? null}
-              emoji={messageEmoji ?? null}
-              from={messageFrom}
-              ago={messageAgo}
-            />
-          )}
+          {screen === 'steps' && <StepsFace size={size} steps={steps} goal={stepsGoal} />}
         </button>
       </div>
 
@@ -351,7 +323,6 @@ function StepsFace({
   size: number
   steps: number
   goal: number
-  series?: number[]
 }) {
   const pct = Math.max(0, Math.min(1, steps / goal))
   const ringR = 38
@@ -411,113 +382,6 @@ function StepsFace({
         opacity={0.65}
       >
         {Math.round(pct * 100)}% · {goal.toLocaleString('ru')}
-      </text>
-    </FaceFrame>
-  )
-}
-
-// ============================================================================
-// MESSAGE — large emoji or envelope, two-line body, sender + ago footer.
-// ============================================================================
-function MessageFace({
-  size,
-  text,
-  emoji,
-  from,
-  ago,
-}: {
-  size: number
-  text: string | null
-  emoji: string | null
-  from: string
-  ago: string
-}) {
-  if (!text) {
-    return (
-      <FaceFrame size={size}>
-        <text
-          x={70}
-          y={52}
-          textAnchor="middle"
-          fontSize={7}
-          fill={INK}
-          opacity={0.55}
-          letterSpacing={1.8}
-          fontFamily="Inter, sans-serif"
-          fontWeight={500}
-        >
-          INBOX
-        </text>
-        <g transform="translate(60 70)" opacity={0.4}>
-          <rect x={0} y={0} width={20} height={14} rx={2} fill="none" stroke={INK} strokeWidth={1.1} />
-          <path d="M 0 0 L 10 8 L 20 0" fill="none" stroke={INK} strokeWidth={1.1} strokeLinecap="round" />
-        </g>
-        <text
-          x={70}
-          y={102}
-          textAnchor="middle"
-          fontSize={8.5}
-          fill={INK}
-          opacity={0.5}
-          fontFamily="Inter, sans-serif"
-        >
-          empty
-        </text>
-      </FaceFrame>
-    )
-  }
-  return (
-    <FaceFrame size={size}>
-      <text
-        x={70}
-        y={42}
-        textAnchor="middle"
-        fontSize={7}
-        fill={INK}
-        opacity={0.65}
-        letterSpacing={1.8}
-        fontFamily="Inter, sans-serif"
-        fontWeight={600}
-        style={{ textTransform: 'uppercase' }}
-      >
-        from {from}
-      </text>
-      {emoji && (
-        <text x={70} y={70} textAnchor="middle" fontSize={22} className="watch-msg-icon">
-          {emoji}
-        </text>
-      )}
-      <foreignObject x={28} y={emoji ? 76 : 60} width={84} height={28}>
-        <div
-          style={{
-            color: INK,
-            fontFamily: 'Inter, sans-serif',
-            fontSize: '10px',
-            lineHeight: '1.25',
-            textAlign: 'center',
-            fontWeight: 500,
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical' as const,
-          }}
-        >
-          {text}
-        </div>
-      </foreignObject>
-      <text
-        x={70}
-        y={112}
-        textAnchor="middle"
-        fontSize={6.5}
-        fill={INK}
-        opacity={0.45}
-        letterSpacing={1.3}
-        fontFamily="Inter, sans-serif"
-        fontWeight={500}
-        style={{ textTransform: 'uppercase' }}
-      >
-        {ago}
       </text>
     </FaceFrame>
   )

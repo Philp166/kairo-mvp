@@ -45,11 +45,6 @@ export function WatchPage({ childId }: WatchPageProps) {
             stepsGoal={child.stepsGoal}
             hr={child.hr}
             hrBaseline={child.hrBaseline}
-            stepsSeries={child.stepsSeries}
-            message={child.lastMessage?.text ?? null}
-            messageEmoji={child.lastMessage?.emoji ?? null}
-            messageAgo={child.lastMessage?.ts ?? 'just now'}
-            messageFrom="mom"
             size={300}
             bare={true}
             childName={child.name}
@@ -57,8 +52,8 @@ export function WatchPage({ childId }: WatchPageProps) {
         </div>
 
         <p className="mt-10 max-w-md text-center text-sm text-app-muted leading-relaxed">
-          5-screen carousel: Spark, clock, heart rate, steps, parent message.
-          Tap the face to go to the next screen.
+          Four functional faces: Spark, clock, heart rate, steps. Glanceable —
+          designed to point attention back at the kid, not at the device.
         </p>
       </main>
 

@@ -1,13 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { SparkV1, type SparkState, type SparkEvent } from './components/Spark/SparkV1'
-import { StatTile } from './components/StatTile'
 import { EventLog, type KairoEvent } from './components/EventLog'
-import { HeartChart } from './components/HeartChart'
-import { Sparkline } from './components/Sparkline'
-import { SleepCard } from './components/SleepCard'
-import { WearTimeRing } from './components/WearTimeRing'
-import { TimeRangeToggle, type TimeRange } from './components/TimeRangeToggle'
-import { MessageDialog } from './components/MessageDialog'
 import { ScheduleCard, type ScheduleRule } from './components/ScheduleCard'
 import { GeofenceList } from './components/GeofenceList'
 import { SosBanner } from './components/SosBanner'
@@ -17,17 +10,7 @@ import { ToastHost, type ToastSpec } from './components/Toast'
 import { WatchPage } from './components/WatchPage'
 import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
-import {
-  HeartIcon,
-  LungsIcon,
-  ThermometerIcon,
-  StepsIcon,
-  BatteryIcon,
-  HugIcon,
-  MessageIcon,
-  PinIcon,
-  SchoolIcon,
-} from './components/icons'
+import { HugIcon, SchoolIcon } from './components/icons'
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''))
@@ -48,8 +31,6 @@ const stateLabels: Record<SparkState, { label: string; sub: string }> = {
 
 const stateOrder: SparkState[] = ['calm', 'active', 'sleepy', 'worried']
 
-const weekLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
-
 function App() {
   const hash = useHashRoute()
   if (hash.startsWith('#watch')) {
@@ -65,12 +46,7 @@ function DashboardPage() {
   const [state, setState] = useState<SparkState>(baseChild.state)
   const [event, setEvent] = useState<SparkEvent>(null)
   const [eventKey, setEventKey] = useState(0)
-  const [hrRange, setHrRange] = useState<TimeRange>('1d')
-  const [msgOpen, setMsgOpen] = useState(false)
   const [transientLog, setTransientLog] = useState<KairoEvent[]>([])
-  const [, setLastMsgOverride] = useState<
-    { emoji: string; text: string; ts: string } | null | 'unset'
-  >('unset')
   const [sosAcked, setSosAcked] = useState(false)
   const [rules, setRules] = useState<ScheduleRule[]>([
     {
@@ -107,7 +83,6 @@ function DashboardPage() {
     setState(baseChild.state)
     setEvent(null)
     setTransientLog([])
-    setLastMsgOverride('unset')
     setSosAcked(false)
   }, [baseChild.id, baseChild.state])
 
@@ -166,30 +141,7 @@ function DashboardPage() {
         lastSync: 'live',
       }
     : baseChild
-  const stepsPct = Math.min(100, Math.round((child.steps / child.stepsGoal) * 100))
   const isWorried = state === 'worried'
-  const tempDelta = +(child.tempC - child.tempBaseline).toFixed(2)
-  const tempAttention = Math.abs(tempDelta) >= 0.2
-
-  const hrData =
-    hrRange === '1d'
-      ? child.hrSeries
-      : hrRange === '7d'
-      ? child.hrSeriesWeek
-      : child.hrSeriesMonth
-
-  const hrLabels =
-    hrRange === '1d'
-      ? undefined
-      : hrRange === '7d'
-      ? weekLabels.map((l, i) => ({ i, label: l }))
-      : [
-          { i: 0, label: '1' },
-          { i: 9, label: '10' },
-          { i: 19, label: '20' },
-          { i: 29, label: '30' },
-        ]
-
   const ageWord = (n: number) => (n === 1 ? 'yr old' : 'yrs old')
 
   const allEvents = [...transientLog, ...child.events]
@@ -342,18 +294,7 @@ function DashboardPage() {
                 className="cursor-pointer text-[14px] font-medium px-4 py-2.5 rounded-full bg-app-ink text-white hover:opacity-90 transition-opacity duration-200 inline-flex items-center gap-2"
               >
                 <HugIcon width={15} height={15} />
-                Hug
-              </button>
-              <button
-                onClick={() => setMsgOpen(true)}
-                className="cursor-pointer text-[14px] font-medium px-4 py-2.5 rounded-full bg-app-surface border border-app-line-2 hover:bg-app-line transition-colors duration-200 inline-flex items-center gap-2"
-              >
-                <MessageIcon width={15} height={15} />
-                Message
-              </button>
-              <button className="cursor-pointer text-[14px] font-medium px-4 py-2.5 rounded-full bg-app-surface border border-app-line-2 hover:bg-app-line transition-colors duration-200 inline-flex items-center gap-2">
-                <PinIcon width={15} height={15} />
-                Locate
+                Send hug
               </button>
             </div>
           </div>
@@ -381,157 +322,51 @@ function DashboardPage() {
           </section>
         )}
 
-        {/* Stats */}
-        <section>
-          <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-4">
-            Now
-          </h2>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <StatTile
-              label="Heart rate"
-              value={child.hr}
-              unit="bpm"
-              hint={isWorried ? 'above range' : `baseline ~${child.hrBaseline}`}
-              status={isWorried ? 'attention' : 'normal'}
-              icon={<HeartIcon width={16} height={16} />}
-              accent="text-app-red"
-              chart={<Sparkline data={child.hrSeries} color="#FF3B30" width={70} height={22} />}
-            />
-            <StatTile
-              label="SpO₂"
-              value={child.spo2}
-              unit="%"
-              hint="normal ≥ 95%"
-              status="good"
-              icon={<LungsIcon width={16} height={16} />}
-              accent="text-app-blue"
-            />
-            <StatTile
-              label="Temperature"
-              value={child.tempC.toFixed(1)}
-              unit="°C"
-              hint={
-                tempAttention
-                  ? `Δ ${tempDelta > 0 ? '+' : ''}${tempDelta}° vs baseline`
-                  : `baseline ${child.tempBaseline.toFixed(1)}° (14d)`
-              }
-              status={tempAttention ? 'attention' : 'normal'}
-              icon={<ThermometerIcon width={16} height={16} />}
-              accent="text-app-orange"
-            />
-            <StatTile
-              label="Steps"
-              value={child.steps.toLocaleString('en')}
-              unit={`/ ${child.stepsGoal.toLocaleString('en')}`}
-              hint={`${stepsPct}% of daily goal`}
-              status="normal"
-              icon={<StepsIcon width={16} height={16} />}
-              accent="text-app-green"
-              chart={
-                <Sparkline data={child.stepsSeries} color="#34C759" width={70} height={22} fill />
-              }
-            />
-            <StatTile
-              label="Battery"
-              value={child.battery}
-              unit="%"
-              hint={
-                child.battery < 15
-                  ? 'critical'
-                  : child.battery < 30
-                  ? 'charge soon'
-                  : 'good for the day'
-              }
-              status={
-                child.battery < 15
-                  ? 'attention'
-                  : child.battery < 30
-                  ? 'attention'
-                  : 'normal'
-              }
-              icon={<BatteryIcon width={16} height={16} />}
-              accent={child.battery < 30 ? 'text-app-orange' : 'text-app-green'}
-            />
-            <div className="rounded-2xl bg-app-surface border border-app-line p-5 flex flex-col gap-3">
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-medium text-app-ink-2">Wear time</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <div className="tabular">
-                  <div className="text-[34px] leading-none font-semibold tracking-tight">
-                    {Math.round(child.wearPct * 100)}
-                    <span className="text-sm text-app-muted font-normal ml-1">%</span>
-                  </div>
-                </div>
-                <WearTimeRing pct={child.wearPct} size={48} />
-              </div>
-              <div className="text-xs text-app-muted">of awake hours</div>
-            </div>
-          </div>
-        </section>
-
-        {/* Heart chart */}
-        <section>
-          <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
-            <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">
-              Heart rate
-            </h2>
-            <TimeRangeToggle value={hrRange} onChange={setHrRange} />
-          </div>
-          <div className="rounded-2xl bg-app-surface border border-app-line p-5 sm:p-6">
-            <HeartChart data={hrData} baseline={child.hrBaseline} xLabels={hrLabels} />
-          </div>
-        </section>
-
-        {/* Sleep */}
-        <section>
-          <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-4">
-            Last night
-          </h2>
-          <div className="rounded-2xl bg-app-surface border border-app-line p-5 sm:p-6">
-            <SleepCard night={child.sleep} />
-          </div>
-        </section>
-
-        {/* Wellness report — multi-metric trend summary */}
+        {/* Wellness report — single source of truth for vitals trends */}
         <section>
           <WellnessReport
             hr={child.hr}
             hrBaseline={child.hrBaseline}
+            spo2={child.spo2}
+            tempC={child.tempC}
+            tempBaseline={child.tempBaseline}
+            steps={child.steps}
+            stepsGoal={child.stepsGoal}
+            battery={child.battery}
+            wearPct={child.wearPct}
+            lastSync={child.lastSync}
             hrSeries={child.hrSeries}
             hrSeriesWeek={child.hrSeriesWeek}
             hrSeriesMonth={child.hrSeriesMonth}
             hrvSeries={child.hrvSeries}
-            spo2={child.spo2}
             spo2NightSeries={child.spo2NightSeries}
-            tempC={child.tempC}
-            tempBaseline={child.tempBaseline}
             tempDeltaSeries={child.tempDeltaSeries}
-            sleepScore={
-              child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 80
-            }
+            sleepScore={child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 80}
             sleepScoreSeries={child.sleepScoreSeries}
-            steps={child.steps}
-            stepsGoal={child.stepsGoal}
             stepsDailySeries={child.stepsDailySeries}
           />
         </section>
 
-        {/* Geo: live map + zones */}
+        {/* Geo: zone overview (intentionally no precise GPS — wellness, not surveillance) */}
         <section>
           <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
             <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">Location</h2>
-            <span className="text-xs text-app-muted">{child.location.address}</span>
+            <span className="text-xs text-app-muted">geofence overview</span>
           </div>
           <div className="space-y-4">
             <LiveMap
               lat={child.location.lat}
               lng={child.location.lng}
-              accuracyM={child.location.accuracyM}
-              place={child.location.place}
-              address={child.location.address}
-              state={state}
-              fixAgo={liveSnap ? 'live · 0s' : `updated ${child.lastSync}`}
+              zoneStatus={currentPlace}
+              currentZoneName={
+                currentPlace === 'home'
+                  ? homeZone?.name
+                  : currentPlace === 'school'
+                  ? schoolZone?.name ?? child.location.place
+                  : null
+              }
+              currentDuration={child.location.duration}
+              fixAgo={liveSnap ? 'updated live' : `updated ${child.lastSync}`}
             />
             <GeofenceList
               zones={child.zones}
@@ -597,27 +432,6 @@ function DashboardPage() {
       <footer className="max-w-5xl mx-auto px-6 sm:px-8 pb-10 pt-2 text-xs text-app-muted">
         Kairo · MVP demo · wellness signals, not medical diagnosis
       </footer>
-
-      <MessageDialog
-        open={msgOpen}
-        childName={child.name}
-        onClose={() => setMsgOpen(false)}
-        onSend={(m) => {
-          setMsgOpen(false)
-          setLastMsgOverride({ emoji: m.emoji, text: m.text, ts: 'just now' })
-          appendEvent({
-            id: `msg-${Date.now()}`,
-            kind: 'message',
-            text: `Sent to ${child.name}: ${m.emoji} ${m.text}`,
-            ts: 'just now',
-          })
-          pushToast({
-            emoji: m.emoji,
-            title: `Message sent to ${child.name}'s band`,
-            sub: `${m.text} · HAP-06 buzz`,
-          })
-        }}
-      />
 
       <ToastHost toasts={toasts} onDismiss={dismissToast} />
     </div>
