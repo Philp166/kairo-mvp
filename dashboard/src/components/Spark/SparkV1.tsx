@@ -17,9 +17,9 @@ interface SparkV1Props {
   style?: CSSProperties
 }
 
-type SpriteName = keyof typeof sprites.sprites
 type StateName = keyof typeof sprites.states
 type EventName = keyof typeof sprites.events
+type StateItem = { sprite: string; at: number[]; anim?: string }
 
 const CELL = sprites.cell
 const PALETTE = sprites.palette as Record<string, string>
@@ -91,7 +91,7 @@ export function SparkV1({
   const screenFill = PALETTE[stateDef.bg]
   const breatheClass = animate ? `spark-breathe-${state}` : ''
 
-  const stateItems = stateDef.items.filter((it) => {
+  const stateItems = (stateDef.items as StateItem[]).filter((it) => {
     if (!hideMouth) return true
     return !it.sprite.toLowerCase().startsWith('mouth')
   })

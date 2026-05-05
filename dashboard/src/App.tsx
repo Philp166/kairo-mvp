@@ -67,7 +67,7 @@ function DashboardPage() {
   const [hrRange, setHrRange] = useState<TimeRange>('1d')
   const [msgOpen, setMsgOpen] = useState(false)
   const [transientLog, setTransientLog] = useState<KairoEvent[]>([])
-  const [lastMsgOverride, setLastMsgOverride] = useState<
+  const [, setLastMsgOverride] = useState<
     { emoji: string; text: string; ts: string } | null | 'unset'
   >('unset')
   const [sosAcked, setSosAcked] = useState(false)
@@ -188,9 +188,6 @@ function DashboardPage() {
           { i: 19, label: '20' },
           { i: 29, label: '30' },
         ]
-
-  const liveMessage =
-    lastMsgOverride === 'unset' ? child.lastMessage : lastMsgOverride
 
   const ageWord = (n: number) => (n === 1 ? 'yr old' : 'yrs old')
 

@@ -27,7 +27,12 @@
       "Bash(gh --version)",
       "Bash(vercel --version)",
       "Bash(netlify --version)",
-      "Bash(npx vercel *)"
+      "Bash(npx vercel *)",
+      "Bash(kill bc7n4hy24 *)",
+      "Read(//c/Users/philip/AppData/Roaming/com.vercel.cli/**)",
+      "Read(//c/Users/philip/AppData/Local/**)",
+      "Read(//c/Users/philip/.config/**)",
+      "Bash(npm i *)"
     ]
   }
 }
