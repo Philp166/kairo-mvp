@@ -12,6 +12,7 @@ import { ScheduleCard, type ScheduleRule } from './components/ScheduleCard'
 import { GeofenceList } from './components/GeofenceList'
 import { SosBanner } from './components/SosBanner'
 import { LiveMap } from './components/LiveMap'
+import { WellnessReport } from './components/WellnessReport'
 import { ToastHost, type ToastSpec } from './components/Toast'
 import { WatchPage } from './components/WatchPage'
 import { mockChildren } from './mock'
@@ -490,6 +491,30 @@ function DashboardPage() {
           <div className="rounded-2xl bg-app-surface border border-app-line p-5 sm:p-6">
             <SleepCard night={child.sleep} />
           </div>
+        </section>
+
+        {/* Wellness report — multi-metric trend summary */}
+        <section>
+          <WellnessReport
+            hr={child.hr}
+            hrBaseline={child.hrBaseline}
+            hrSeries={child.hrSeries}
+            hrSeriesWeek={child.hrSeriesWeek}
+            hrSeriesMonth={child.hrSeriesMonth}
+            hrvSeries={child.hrvSeries}
+            spo2={child.spo2}
+            spo2NightSeries={child.spo2NightSeries}
+            tempC={child.tempC}
+            tempBaseline={child.tempBaseline}
+            tempDeltaSeries={child.tempDeltaSeries}
+            sleepScore={
+              child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 80
+            }
+            sleepScoreSeries={child.sleepScoreSeries}
+            steps={child.steps}
+            stepsGoal={child.stepsGoal}
+            stepsDailySeries={child.stepsDailySeries}
+          />
         </section>
 
         {/* Geo: live map + zones */}

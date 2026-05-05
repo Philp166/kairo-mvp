@@ -28,6 +28,13 @@ export interface ChildSnapshot {
   sleep: SleepNight
   zones: GeoZone[]
   lastMessage: { emoji: string; text: string; ts: string } | null
+  /** Wellness report series — last N days, oldest first. */
+  reportDays: number
+  hrvSeries: number[]      // RMSSD ms
+  spo2NightSeries: number[] // mean nightly SpO2 %
+  tempDeltaSeries: number[] // delta vs 14d baseline °C
+  sleepScoreSeries: number[]
+  stepsDailySeries: number[]
 }
 
 function genHrSeries(profile: 'mash' | 'art' = 'mash'): number[] {
@@ -56,6 +63,50 @@ function genHrSeriesDaily(days: number, profile: 'mash' | 'art' = 'mash'): numbe
     const base = 86 + offset
     const noise = Math.sin(i * 0.9) * 3 + Math.cos(i * 0.5) * 2
     out.push(Math.round(base + noise))
+  }
+  return out
+}
+
+function genHrvSeries(days: number, profile: 'mash' | 'art' = 'mash'): number[] {
+  const base = profile === 'art' ? 48 : 42
+  const out: number[] = []
+  for (let i = 0; i < days; i++) {
+    out.push(Math.round(base + Math.sin(i * 0.6) * 4 + Math.cos(i * 0.35) * 3))
+  }
+  return out
+}
+
+function genSpo2NightSeries(days: number): number[] {
+  const out: number[] = []
+  for (let i = 0; i < days; i++) {
+    out.push(+(97 + Math.cos(i * 0.4) * 0.8 + Math.sin(i * 0.7) * 0.4).toFixed(1))
+  }
+  return out
+}
+
+function genTempDeltaSeries(days: number): number[] {
+  const out: number[] = []
+  for (let i = 0; i < days; i++) {
+    out.push(+((Math.sin(i * 0.5) * 0.12 + Math.cos(i * 0.7) * 0.06).toFixed(2)))
+  }
+  return out
+}
+
+function genSleepScoreSeries(days: number, profile: 'mash' | 'art' = 'mash'): number[] {
+  const base = profile === 'art' ? 82 : 77
+  const out: number[] = []
+  for (let i = 0; i < days; i++) {
+    out.push(Math.round(base + Math.sin(i * 0.4) * 6 + Math.cos(i * 0.9) * 3))
+  }
+  return out
+}
+
+function genStepsDailySeries(days: number, goal: number): number[] {
+  const out: number[] = []
+  for (let i = 0; i < days; i++) {
+    const swing = Math.sin(i * 0.55) * 0.35 + Math.cos(i * 0.3) * 0.15
+    const v = goal * (0.7 + swing)
+    out.push(Math.max(500, Math.round(v)))
   }
   return out
 }
@@ -208,6 +259,12 @@ export const mockChildren: ChildSnapshot[] = [
     sleep: genSleepNight('mash', '22:30', '07:42', 552),
     zones: mashaZones,
     lastMessage: null,
+    reportDays: 30,
+    hrvSeries: genHrvSeries(30, 'mash'),
+    spo2NightSeries: genSpo2NightSeries(30),
+    tempDeltaSeries: genTempDeltaSeries(30),
+    sleepScoreSeries: genSleepScoreSeries(30, 'mash'),
+    stepsDailySeries: genStepsDailySeries(30, 8000),
   },
   {
     id: 'artyom',
@@ -241,6 +298,12 @@ export const mockChildren: ChildSnapshot[] = [
     sleep: genSleepNight('art', '21:00', '07:18', 618),
     zones: artZones,
     lastMessage: { emoji: '⭐', text: 'Great job', ts: '2 h ago' },
+    reportDays: 30,
+    hrvSeries: genHrvSeries(30, 'art'),
+    spo2NightSeries: genSpo2NightSeries(30),
+    tempDeltaSeries: genTempDeltaSeries(30),
+    sleepScoreSeries: genSleepScoreSeries(30, 'art'),
+    stepsDailySeries: genStepsDailySeries(30, 6000),
   },
 ]
 

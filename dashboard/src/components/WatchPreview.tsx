@@ -157,7 +157,7 @@ export function WatchPreview({
 // ============================================================================
 
 const BG = '#D85A30'           // terracotta screen — same as Spark v1
-const INK = '#1A1538'          // deep indigo-black — primary text & glyphs
+const INK = '#FAF6EC'          // milk — primary text & glyphs on the screen
 const BEZEL = '#F0E8DC'        // cream bezel surrounding the screen
 const BEZEL_EDGE = '#D4C9B5'   // bezel outline
 
