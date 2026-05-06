@@ -125,94 +125,108 @@ interface RowProps {
 function Row({ rule, onUpdate, onRemove }: RowProps) {
   const [editingLabel, setEditingLabel] = useState(false)
   const meta = KIND_META[rule.kind]
+
+  const labelEl = editingLabel ? (
+    <input
+      autoFocus
+      type="text"
+      value={rule.label}
+      onChange={(e) => onUpdate({ label: e.target.value })}
+      onBlur={() => setEditingLabel(false)}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === 'Escape') setEditingLabel(false)
+      }}
+      className="text-sm font-medium text-app-ink bg-app-bg rounded px-2 py-0.5 border border-app-line-2 focus:outline-none focus:border-app-ink/40 min-w-0 flex-1"
+    />
+  ) : (
+    <button
+      onClick={() => setEditingLabel(true)}
+      className="text-sm font-medium text-app-ink truncate hover:text-app-muted transition-colors duration-150 cursor-pointer text-left"
+      title="Rename"
+    >
+      {rule.label}
+    </button>
+  )
+
+  const toggle = (
+    <button
+      role="switch"
+      aria-checked={rule.enabled}
+      aria-label={`${rule.enabled ? 'Disable' : 'Enable'} ${rule.label}`}
+      onClick={() => onUpdate({ enabled: !rule.enabled })}
+      className={`cursor-pointer w-10 h-6 rounded-full relative transition-colors duration-200 shrink-0 ${
+        rule.enabled ? 'bg-app-green' : 'bg-app-line-2'
+      }`}
+    >
+      <span
+        className="absolute top-0.5 size-5 rounded-full bg-white shadow-sm"
+        style={{ left: rule.enabled ? 18 : 2 }}
+      />
+    </button>
+  )
+
+  const removeBtn = (
+    <button
+      onClick={onRemove}
+      aria-label="Delete rule"
+      title="Delete"
+      className="cursor-pointer size-7 shrink-0 rounded-full text-app-muted hover:text-app-red hover:bg-app-red/10 transition-colors duration-150 flex items-center justify-center"
+    >
+      <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        <line x1={5} y1={6} x2={19} y2={6} />
+        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+        <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
+      </svg>
+    </button>
+  )
+
+  const timeInputs =
+    rule.enabled && rule.kind === 'bedtime' ? (
+      <input
+        type="time"
+        value={rule.time ?? '21:30'}
+        onChange={(e) => onUpdate({ time: e.target.value })}
+        className="text-sm px-3 py-1.5 rounded-lg border border-app-line bg-app-bg tabular focus:outline-none focus:border-app-ink/40"
+      />
+    ) : rule.enabled && (rule.kind === 'school' || rule.kind === 'quiet') ? (
+      <div className="flex items-center gap-1.5 text-sm tabular">
+        <input
+          type="time"
+          value={rule.start ?? '08:30'}
+          onChange={(e) => onUpdate({ start: e.target.value })}
+          className="px-2.5 py-1.5 rounded-lg border border-app-line bg-app-bg focus:outline-none focus:border-app-ink/40"
+        />
+        <span className="text-app-muted">–</span>
+        <input
+          type="time"
+          value={rule.end ?? '14:00'}
+          onChange={(e) => onUpdate({ end: e.target.value })}
+          className="px-2.5 py-1.5 rounded-lg border border-app-line bg-app-bg focus:outline-none focus:border-app-ink/40"
+        />
+      </div>
+    ) : null
+
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl border border-app-line p-3.5 bg-app-surface">
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          {editingLabel ? (
-            <input
-              autoFocus
-              type="text"
-              value={rule.label}
-              onChange={(e) => onUpdate({ label: e.target.value })}
-              onBlur={() => setEditingLabel(false)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === 'Escape') setEditingLabel(false)
-              }}
-              className="text-sm font-medium text-app-ink bg-app-bg rounded px-2 py-0.5 border border-app-line-2 focus:outline-none focus:border-app-ink/40 min-w-0 flex-1"
-            />
-          ) : (
-            <button
-              onClick={() => setEditingLabel(true)}
-              className="text-sm font-medium text-app-ink truncate hover:text-app-muted transition-colors duration-150 cursor-pointer"
-              title="Rename"
-            >
-              {rule.label}
-            </button>
-          )}
+    <div className="rounded-2xl border border-app-line p-3.5 bg-app-surface">
+      {/* Top row: label + badge | toggle + delete */}
+      <div className="flex items-center gap-3">
+        <div className="flex-1 min-w-0 flex items-center gap-2">
+          {labelEl}
           <span className="text-[10px] tabular px-1.5 py-0.5 rounded-md bg-app-line/70 text-app-muted shrink-0">
             {meta.hap}
           </span>
         </div>
-        <div className="text-xs text-app-muted mt-0.5">
-          {rule.enabled ? meta.sub(rule) : 'Off'}
-        </div>
+        {toggle}
+        {removeBtn}
       </div>
 
-      {rule.enabled && rule.kind === 'bedtime' && (
-        <input
-          type="time"
-          value={rule.time ?? '21:30'}
-          onChange={(e) => onUpdate({ time: e.target.value })}
-          className="text-sm px-3 py-1.5 rounded-lg border border-app-line bg-app-bg tabular focus:outline-none focus:border-app-ink/40"
-        />
-      )}
-
-      {rule.enabled && (rule.kind === 'school' || rule.kind === 'quiet') && (
-        <div className="flex items-center gap-1.5 text-sm tabular">
-          <input
-            type="time"
-            value={rule.start ?? '08:30'}
-            onChange={(e) => onUpdate({ start: e.target.value })}
-            className="px-2.5 py-1.5 rounded-lg border border-app-line bg-app-bg focus:outline-none focus:border-app-ink/40"
-          />
-          <span className="text-app-muted">–</span>
-          <input
-            type="time"
-            value={rule.end ?? '14:00'}
-            onChange={(e) => onUpdate({ end: e.target.value })}
-            className="px-2.5 py-1.5 rounded-lg border border-app-line bg-app-bg focus:outline-none focus:border-app-ink/40"
-          />
+      {/* Sub-line + time inputs */}
+      <div className="mt-1.5 flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-xs text-app-muted min-w-0 truncate flex-1">
+          {rule.enabled ? meta.sub(rule) : 'Off'}
         </div>
-      )}
-
-      <button
-        role="switch"
-        aria-checked={rule.enabled}
-        aria-label={`${rule.enabled ? 'Выключить' : 'Включить'} ${rule.label}`}
-        onClick={() => onUpdate({ enabled: !rule.enabled })}
-        className={`cursor-pointer w-10 h-6 rounded-full relative transition-colors duration-200 shrink-0 ${
-          rule.enabled ? 'bg-app-green' : 'bg-app-line-2'
-        }`}
-      >
-        <span
-          className="absolute top-0.5 size-5 rounded-full bg-white shadow-sm"
-          style={{ left: rule.enabled ? 18 : 2 }}
-        />
-      </button>
-
-      <button
-        onClick={onRemove}
-        aria-label="Удалить правило"
-        title="Удалить"
-        className="cursor-pointer size-7 shrink-0 rounded-full text-app-muted hover:text-app-red hover:bg-app-red/10 transition-colors duration-150 flex items-center justify-center"
-      >
-        <svg width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-          <line x1={5} y1={6} x2={19} y2={6} />
-          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          <path d="M6 6l1 14a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-14" />
-        </svg>
-      </button>
+        {timeInputs}
+      </div>
     </div>
   )
 }

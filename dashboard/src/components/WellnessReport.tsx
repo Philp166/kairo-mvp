@@ -176,7 +176,7 @@ export function WellnessReport(p: WellnessReportProps) {
       </p>
 
       {/* ── Six metric cards ────────────────────────────────────────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card
           title="Heart rate"
           icon={<HeartIcon width={14} height={14} />}
@@ -323,20 +323,45 @@ interface CardProps {
 function Card({ title, icon, accent, value, unit, sub, chart }: CardProps) {
   return (
     <div className="rounded-2xl bg-app-surface border border-app-line p-4 sm:p-5">
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <span className={accent}>{icon}</span>
-          <span className="text-[11px] uppercase tracking-[0.1em] text-app-muted">
+      {/* Mobile: horizontal Apple-Health row (icon · text · chart) */}
+      <div className="flex items-center gap-3 lg:hidden">
+        <span
+          className={`shrink-0 size-9 rounded-xl bg-app-line/70 flex items-center justify-center ${accent}`}
+        >
+          {icon}
+        </span>
+        <div className="flex-1 min-w-0">
+          <div className="text-[10px] uppercase tracking-[0.12em] text-app-muted">
             {title}
-          </span>
+          </div>
+          <div className="mt-0.5 flex items-baseline gap-1.5 tabular">
+            <span className="text-[22px] leading-none font-semibold tracking-tight">
+              {value}
+            </span>
+            <span className="text-xs text-app-muted">{unit}</span>
+          </div>
+          <div className="mt-1 text-[11px] text-app-muted truncate">{sub}</div>
         </div>
-        <div className="opacity-80">{chart}</div>
+        {chart && <div className="shrink-0 opacity-80">{chart}</div>}
       </div>
-      <div className="mt-2 flex items-baseline gap-1.5 tabular">
-        <span className="text-[26px] leading-none font-semibold tracking-tight">{value}</span>
-        <span className="text-xs text-app-muted">{unit}</span>
+
+      {/* Desktop: original stacked layout */}
+      <div className="hidden lg:block">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5">
+            <span className={accent}>{icon}</span>
+            <span className="text-[11px] uppercase tracking-[0.1em] text-app-muted">
+              {title}
+            </span>
+          </div>
+          <div className="opacity-80">{chart}</div>
+        </div>
+        <div className="mt-2 flex items-baseline gap-1.5 tabular">
+          <span className="text-[26px] leading-none font-semibold tracking-tight">{value}</span>
+          <span className="text-xs text-app-muted">{unit}</span>
+        </div>
+        <div className="mt-1 text-[11px] text-app-muted truncate">{sub}</div>
       </div>
-      <div className="mt-1 text-[11px] text-app-muted truncate">{sub}</div>
     </div>
   )
 }

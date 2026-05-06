@@ -37,44 +37,50 @@ export function GeofenceList({ zones, currentZoneId, currentDuration }: Geofence
         const Icon = kindIcon[z.kind]
         const last = z.lastEvent
         const isHere = z.id === currentZoneId
+        const subline = isHere
+          ? currentDuration
+            ? `Here · ${currentDuration}`
+            : 'Here'
+          : last
+          ? `${last.type === 'enter' ? 'Entered' : 'Left'} ${last.ts}`
+          : !z.active
+          ? 'Alerts off'
+          : `Radius ${z.radiusM < 1000 ? `${z.radiusM} m` : `${(z.radiusM / 1000).toFixed(1)} km`}`
         return (
           <div
             key={z.id}
-            className={`flex items-center gap-3 rounded-xl border p-3.5 ${
+            className={`flex items-center gap-3 rounded-2xl border p-3.5 transition-colors ${
               isHere
                 ? 'border-app-green/40 bg-app-green/5'
                 : 'border-app-line bg-app-surface'
             }`}
           >
             <span
-              className={`size-9 rounded-lg flex items-center justify-center shrink-0 ${
+              className={`size-9 rounded-xl flex items-center justify-center shrink-0 ${
                 isHere ? 'bg-app-green/15 text-app-green' : 'bg-app-line text-app-muted'
               }`}
             >
               <Icon width={16} height={16} />
             </span>
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-app-ink truncate">{z.name}</span>
-                {isHere && (
-                  <span className="text-[10px] uppercase tracking-[0.08em] font-medium text-app-green bg-app-green/10 rounded-full px-1.5 py-0.5">
-                    here{currentDuration ? ` · ${currentDuration}` : ''}
-                  </span>
-                )}
+              <div className="text-[15px] font-medium text-app-ink truncate leading-tight">
+                {z.name}
               </div>
-              <div className="text-xs text-app-muted">
-                radius {z.radiusM < 1000 ? `${z.radiusM} m` : `${(z.radiusM / 1000).toFixed(1)} km`}
-                {last && (
-                  <>
-                    {' · '}
-                    <span className={last.type === 'enter' ? 'text-app-green' : 'text-app-muted'}>
-                      {last.type === 'enter' ? 'entered' : 'left'} {last.ts}
-                    </span>
-                  </>
-                )}
-                {!z.active && ' · alerts off'}
+              <div
+                className={`text-xs leading-tight mt-0.5 ${
+                  isHere
+                    ? 'text-app-green font-medium'
+                    : last?.type === 'enter'
+                    ? 'text-app-green'
+                    : 'text-app-muted'
+                }`}
+              >
+                {subline}
               </div>
             </div>
+            {isHere && (
+              <span className="size-2 rounded-full bg-app-green animate-pulse shrink-0" />
+            )}
           </div>
         )
       })}

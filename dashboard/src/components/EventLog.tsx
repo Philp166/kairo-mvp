@@ -59,13 +59,15 @@ export function EventLog({ events }: EventLogProps) {
             ? 'text-app-green'
             : 'text-app-muted'
         return (
-          <li key={e.id} className="flex items-start gap-3 py-3.5">
-            <span className={`shrink-0 mt-0.5 ${iconColor}`}>
-              <m.Icon width={16} height={16} />
+          <li key={e.id} className="flex items-center gap-3 py-2.5">
+            <span
+              className={`shrink-0 size-7 rounded-full bg-app-line/70 flex items-center justify-center ${iconColor}`}
+            >
+              <m.Icon width={13} height={13} />
             </span>
             <div className="flex-1 min-w-0">
-              <div className="text-[14px] text-app-ink leading-snug">{e.text}</div>
-              <div className="text-xs text-app-muted mt-0.5">{e.ts}</div>
+              <div className="text-[13px] text-app-ink leading-tight truncate">{e.text}</div>
+              <div className="text-[11px] text-app-muted mt-0.5">{e.ts}</div>
             </div>
           </li>
         )

@@ -85,8 +85,17 @@ export function LiveMap({
         className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${
           loaded ? 'opacity-100' : 'opacity-0'
         }`}
-        style={{ border: 0, filter: 'saturate(0.7) contrast(0.95) brightness(1.02)' }}
+        style={{ border: 0, filter: 'saturate(0.65) contrast(0.95) brightness(1.02)' }}
         referrerPolicy="no-referrer"
+        scrolling="no"
+      />
+      {/* Gradient mask: hides OSM watermark / Cyrillic captions at the bottom */}
+      <div
+        className="absolute inset-x-0 bottom-0 h-16 pointer-events-none"
+        style={{
+          background:
+            'linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.85) 60%, rgba(255,255,255,0) 100%)',
+        }}
       />
 
       {!loaded && (
