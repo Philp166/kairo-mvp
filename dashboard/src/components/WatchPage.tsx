@@ -5,8 +5,48 @@
  */
 
 import { useEffect, useState } from 'react'
-import { WatchPreview } from './WatchPreview'
+import { WatchPreview, type WatchAlert, type WatchAlertKind } from './WatchPreview'
 import { mockChildren } from '../mock'
+import type { KairoEvent } from './EventLog'
+
+/**
+ * Pull last few system-level events out of the parent activity log into a
+ * watch-friendly shape: short text + tiny timestamp. Filters out anything
+ * that looks like a message — the wrist is intentionally narrow.
+ */
+function eventsToAlerts(events: KairoEvent[], childName: string): WatchAlert[] {
+  const map: Record<string, WatchAlertKind | undefined> = {
+    arrive_home: 'geofence_in',
+    leave_home: 'geofence_out',
+    parent_touch: 'hug',
+    goal: 'goal',
+    low_battery: 'low_battery',
+  }
+  return events
+    .map((e) => {
+      const kind = map[e.kind]
+      if (!kind) return null
+      const text =
+        kind === 'geofence_in'
+          ? 'arrived home'
+          : kind === 'geofence_out'
+          ? 'left home'
+          : kind === 'hug'
+          ? 'hug from parent'
+          : kind === 'goal'
+          ? 'daily goal reached'
+          : 'battery low'
+      return {
+        id: e.id,
+        kind,
+        text,
+        // Strip the child's name and re-format any "today HH:MM" timestamps.
+        ts: e.ts.replace(childName, '').match(/\d{2}:\d{2}/)?.[0] ?? e.ts.split(' ').slice(0, 2).join(' '),
+      } as WatchAlert
+    })
+    .filter((x): x is WatchAlert => x !== null)
+    .slice(0, 3)
+}
 
 interface WatchPageProps {
   childId?: string
@@ -45,6 +85,7 @@ export function WatchPage({ childId }: WatchPageProps) {
             stepsGoal={child.stepsGoal}
             hr={child.hr}
             hrBaseline={child.hrBaseline}
+            alerts={eventsToAlerts(child.events, child.name)}
             size={300}
             bare={true}
             childName={child.name}
@@ -52,8 +93,9 @@ export function WatchPage({ childId }: WatchPageProps) {
         </div>
 
         <p className="mt-10 max-w-md text-center text-sm text-app-muted leading-relaxed">
-          Four functional faces: Spark, clock, heart rate, steps. Glanceable —
-          designed to point attention back at the kid, not at the device.
+          Five faces: Spark, clock, heart rate, steps, and today's alerts —
+          system events only (geofence, hug, battery), no chat or social feed.
+          Glanceable — points back to the kid, not the device.
         </p>
       </main>
 

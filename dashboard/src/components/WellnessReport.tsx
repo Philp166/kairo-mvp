@@ -56,6 +56,9 @@ interface WellnessReportProps {
   sleepScore: number
   sleepScoreSeries: number[]
   stepsDailySeries: number[]
+  // brief link
+  briefHref?: string
+  briefMonths?: number
 }
 
 const ranges: { id: ReportRange; label: string }[] = [
@@ -265,6 +268,37 @@ export function WellnessReport(p: WellnessReportProps) {
           chart={<Sparkline data={stepsWin} color="#34C759" width={88} height={26} fill />}
         />
       </div>
+
+      {p.briefHref && (
+        <a
+          href={p.briefHref}
+          className="group mt-4 flex items-center justify-between gap-4 rounded-2xl border border-app-line bg-app-surface p-4 sm:p-5 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
+        >
+          <div className="min-w-0">
+            <div className="text-[11px] uppercase tracking-[0.12em] text-app-muted mb-0.5">
+              Paediatrician brief
+            </div>
+            <div className="text-[15px] font-medium leading-tight">
+              Print the longitudinal record
+              <span className="text-app-muted group-hover:translate-x-0.5 inline-block transition-transform duration-150 ml-1">
+                →
+              </span>
+            </div>
+            <div className="text-xs text-app-muted mt-1">
+              {p.briefMonths ? `${p.briefMonths} months · ` : ''}24-month trends, annotated
+              timeline, conversation prompts
+            </div>
+          </div>
+          <span className="hidden sm:flex size-10 rounded-xl bg-app-line items-center justify-center text-app-ink shrink-0">
+            <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1={9} y1={13} x2={15} y2={13} />
+              <line x1={9} y1={17} x2={13} y2={17} />
+            </svg>
+          </span>
+        </a>
+      )}
 
       <p className="mt-4 text-[11px] text-app-muted px-1 flex items-center gap-1.5 leading-relaxed">
         <GoalIcon width={11} height={11} />

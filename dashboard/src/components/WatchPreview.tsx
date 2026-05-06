@@ -1,9 +1,14 @@
 /**
  * Kairo watch faces — Spark palette (terracotta screen, cream bezel).
  *
- * Carousel: Spark Avatar → Clock → Heart rate → Steps. Per spec ethics:
- * "Kairo doesn't push notifications, messages, or social feeds to the
- * child's wrist." So no message screen — just the four functional faces.
+ * Carousel: Spark Avatar → Clock → Heart rate → Steps → Alerts.
+ *
+ * On the Alerts face we deliberately keep the door narrow: only system-level
+ * events (geofence enter/exit from the GPS clip-on, a parent hug, low-
+ * battery, daily-goal reached). No social messages, no inbound chat — that
+ * would violate the spec ethics ("Kairo doesn't push notifications,
+ * messages, or social feeds to the child's wrist"). Hugs are a tactile
+ * acknowledgement (HAP-03 buzz), not contentful messaging.
  *
  * 140×140 viewBox; on real AMOLED the firmware scales 1 viewBox-unit ≈ 2.93 px.
  * Display ink: indigo-black on terracotta. Typography: Space Grotesk for
@@ -14,27 +19,39 @@ import { useEffect, useState } from 'react'
 import { SparkV1, type SparkState } from './Spark/SparkV1'
 import './watch.css'
 
+export type WatchAlertKind = 'geofence_in' | 'geofence_out' | 'hug' | 'goal' | 'low_battery'
+
+export interface WatchAlert {
+  id: string
+  kind: WatchAlertKind
+  text: string
+  /** Short relative time, e.g. "08:42" or "now". */
+  ts: string
+}
+
 interface WatchPreviewProps {
   state: SparkState
   steps: number
   stepsGoal: number
   hr: number
   hrBaseline?: number
+  alerts?: WatchAlert[]
   now?: Date
   size?: number
   bare?: boolean
   childName?: string
 }
 
-type Screen = 'spark' | 'clock' | 'hr' | 'steps'
+type Screen = 'spark' | 'clock' | 'hr' | 'steps' | 'alerts'
 
-const screens: Screen[] = ['spark', 'clock', 'hr', 'steps']
+const screens: Screen[] = ['spark', 'clock', 'hr', 'steps', 'alerts']
 
 const screenLabels: Record<Screen, string> = {
   spark: 'Spark',
   clock: 'Clock',
   hr: 'Heart rate',
   steps: 'Steps',
+  alerts: 'Alerts',
 }
 
 export function WatchPreview({
@@ -43,6 +60,7 @@ export function WatchPreview({
   stepsGoal,
   hr,
   hrBaseline = 86,
+  alerts = [],
   now,
   size = 160,
   bare = false,
@@ -97,6 +115,7 @@ export function WatchPreview({
           {screen === 'clock' && <ClockFace size={size} now={time} />}
           {screen === 'hr' && <HRFace size={size} hr={hr} baseline={hrBaseline} />}
           {screen === 'steps' && <StepsFace size={size} steps={steps} goal={stepsGoal} />}
+          {screen === 'alerts' && <AlertsFace size={size} alerts={alerts} />}
         </button>
       </div>
 
@@ -383,6 +402,99 @@ function StepsFace({
       >
         {Math.round(pct * 100)}% · {goal.toLocaleString('ru')}
       </text>
+    </FaceFrame>
+  )
+}
+
+// ============================================================================
+// ALERTS — system-level only (geofence in/out, hug, goal, low battery).
+// Three rows max; intentionally no "messages" or social content.
+// ============================================================================
+
+const ALERT_ICON: Record<WatchAlertKind, string> = {
+  geofence_in: '↘',
+  geofence_out: '↗',
+  hug: '♡',
+  goal: '★',
+  low_battery: '!',
+}
+
+function AlertsFace({ size, alerts }: { size: number; alerts: WatchAlert[] }) {
+  const items = alerts.slice(0, 3)
+  return (
+    <FaceFrame size={size}>
+      <text
+        x={70}
+        y={36}
+        textAnchor="middle"
+        fontSize={7}
+        fill={INK}
+        opacity={0.55}
+        letterSpacing={1.8}
+        fontFamily="Inter, sans-serif"
+        fontWeight={500}
+        style={{ textTransform: 'uppercase' }}
+      >
+        Today
+      </text>
+      {items.length === 0 && (
+        <text
+          x={70}
+          y={78}
+          textAnchor="middle"
+          fontSize={9}
+          fill={INK}
+          opacity={0.45}
+          fontFamily="Inter, sans-serif"
+        >
+          all quiet
+        </text>
+      )}
+      {items.map((a, i) => {
+        const y = 52 + i * 18
+        return (
+          <g key={a.id}>
+            <text
+              x={32}
+              y={y + 4}
+              fontSize={9}
+              fill={INK}
+              fontFamily="'Space Grotesk', sans-serif"
+              fontWeight={600}
+            >
+              {ALERT_ICON[a.kind]}
+            </text>
+            <foreignObject x={42} y={y - 6} width={62} height={14}>
+              <div
+                style={{
+                  color: INK,
+                  fontFamily: 'Inter, sans-serif',
+                  fontSize: '8px',
+                  fontWeight: 500,
+                  lineHeight: 1.15,
+                  overflow: 'hidden',
+                  whiteSpace: 'nowrap',
+                  textOverflow: 'ellipsis',
+                }}
+              >
+                {a.text}
+              </div>
+            </foreignObject>
+            <text
+              x={108}
+              y={y + 4}
+              textAnchor="end"
+              fontSize={7}
+              fill={INK}
+              opacity={0.5}
+              fontFamily="'Space Grotesk', sans-serif"
+              style={{ fontVariantNumeric: 'tabular-nums' }}
+            >
+              {a.ts}
+            </text>
+          </g>
+        )
+      })}
     </FaceFrame>
   )
 }
