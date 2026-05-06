@@ -11,7 +11,7 @@ import { WatchPage } from './components/WatchPage'
 import { BriefPage } from './components/BriefPage'
 import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
-import { HugIcon, SchoolIcon } from './components/icons'
+import { SchoolIcon } from './components/icons'
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''))
@@ -285,28 +285,47 @@ function DashboardPage() {
               </div>
             )}
 
-            <div className="mt-6 flex flex-wrap gap-2 justify-center sm:justify-start">
-              <button
-                data-testid="btn-hug"
-                onClick={() => {
-                  fireEvent('parent_touch', 1500)
-                  appendEvent({
-                    id: `hug-${Date.now()}`,
-                    kind: 'parent_touch',
-                    text: `You hugged ${child.name} through the band`,
-                    ts: 'just now',
-                  })
-                  pushToast({
-                    emoji: '💛',
-                    title: `Hug sent to ${child.name}'s band`,
-                    sub: 'soft buzz · HAP-03 · 2 pulses',
-                  })
-                }}
-                className="cursor-pointer text-[14px] font-medium px-4 py-2.5 rounded-full bg-app-ink text-white hover:opacity-90 transition-opacity duration-200 inline-flex items-center gap-2"
-              >
-                <HugIcon width={15} height={15} />
-                Send hug
-              </button>
+            {/* Quick taps — preset, no free text. Spec: not messaging /
+                not social, just simple acknowledgements that buzz the band. */}
+            <div className="mt-5 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+              {(
+                [
+                  { id: 'hug', emoji: '💛', label: 'Hug', primary: true, hap: 'HAP-03' },
+                  { id: 'cheer', emoji: '⭐', label: 'Cheer', primary: false, hap: 'HAP-02' },
+                  { id: 'bedtime', emoji: '🌙', label: 'Bedtime', primary: false, hap: 'HAP-04' },
+                  { id: 'home', emoji: '🏠', label: 'Come home', primary: false, hap: 'HAP-03' },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  data-testid={`btn-${t.id}`}
+                  onClick={() => {
+                    if (t.id === 'hug') fireEvent('parent_touch', 1500)
+                    appendEvent({
+                      id: `tap-${t.id}-${Date.now()}`,
+                      kind: 'parent_touch',
+                      text: `${t.emoji} ${t.label} sent to ${child.name}`,
+                      ts: 'just now',
+                    })
+                    pushToast({
+                      emoji: t.emoji,
+                      title: `${t.label} sent to ${child.name}'s band`,
+                      sub: `soft buzz · ${t.hap}`,
+                    })
+                  }}
+                  className={`cursor-pointer text-[13px] font-medium px-3.5 py-2 rounded-full transition-all duration-150 inline-flex items-center gap-1.5 active:scale-[0.97] ${
+                    t.primary
+                      ? 'bg-app-ink text-white hover:opacity-90'
+                      : 'bg-app-surface border border-app-line-2 text-app-ink hover:border-app-ink/30 hover:bg-app-line/40'
+                  }`}
+                >
+                  <span aria-hidden>{t.emoji}</span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-[11px] text-app-muted text-center sm:text-left">
+              One-tap signals — no chat, no free text. The band buzzes once.
             </div>
           </div>
         </section>
