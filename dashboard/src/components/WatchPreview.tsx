@@ -407,95 +407,139 @@ function StepsFace({
 }
 
 // ============================================================================
-// ALERTS — system-level only (geofence in/out, hug, goal, low battery).
-// Three rows max; intentionally no "messages" or social content.
+// ALERTS — one focused notification card with big glyph + caption.
+// Tappable to cycle through up to 3 system events. No chat / no social.
 // ============================================================================
 
-const ALERT_ICON: Record<WatchAlertKind, string> = {
-  geofence_in: '↘',
-  geofence_out: '↗',
-  hug: '♡',
-  goal: '★',
-  low_battery: '!',
+const ALERT_GLYPH: Record<WatchAlertKind, (color: string) => React.ReactNode> = {
+  geofence_in: (c) => (
+    <g stroke={c} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none">
+      <path d="M -7 -4 L 0 3 L 7 -4" />
+      <line x1={0} y1={3} x2={0} y2={-7} />
+    </g>
+  ),
+  geofence_out: (c) => (
+    <g stroke={c} strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" fill="none">
+      <path d="M -7 4 L 0 -3 L 7 4" />
+      <line x1={0} y1={-3} x2={0} y2={7} />
+    </g>
+  ),
+  hug: (c) => (
+    <path
+      d="M 0 5 C -7 -3, -10 -10, -5 -10 C -2 -10, 0 -7.5, 0 -5 C 0 -7.5, 2 -10, 5 -10 C 10 -10, 7 -3, 0 5 Z"
+      fill={c}
+    />
+  ),
+  goal: (c) => (
+    <g fill={c} stroke={c} strokeWidth={1.4} strokeLinejoin="round">
+      <circle r={7} fill="none" />
+      <circle r={2.4} />
+    </g>
+  ),
+  low_battery: (c) => (
+    <g stroke={c} strokeWidth={1.4} strokeLinecap="round" fill="none">
+      <rect x={-7} y={-4} width={12} height={8} rx={1.5} />
+      <line x1={6} y1={-2} x2={6} y2={2} />
+      <rect x={-5.5} y={-2.5} width={2.5} height={5} fill={c} stroke="none" />
+    </g>
+  ),
 }
 
 function AlertsFace({ size, alerts }: { size: number; alerts: WatchAlert[] }) {
   const items = alerts.slice(0, 3)
-  return (
-    <FaceFrame size={size}>
-      <text
-        x={70}
-        y={36}
-        textAnchor="middle"
-        fontSize={7}
-        fill={INK}
-        opacity={0.55}
-        letterSpacing={1.8}
-        fontFamily="Inter, sans-serif"
-        fontWeight={500}
-        style={{ textTransform: 'uppercase' }}
-      >
-        Today
-      </text>
-      {items.length === 0 && (
+  const [idx, setIdx] = useState(0)
+  const a = items[idx]
+
+  if (!a) {
+    return (
+      <FaceFrame size={size}>
         <text
           x={70}
-          y={78}
+          y={64}
           textAnchor="middle"
-          fontSize={9}
+          fontSize={7}
           fill={INK}
-          opacity={0.45}
+          opacity={0.55}
+          letterSpacing={2}
+          fontFamily="Inter, sans-serif"
+          fontWeight={500}
+          style={{ textTransform: 'uppercase' }}
+        >
+          Today
+        </text>
+        <text
+          x={70}
+          y={84}
+          textAnchor="middle"
+          fontSize={11}
+          fontWeight={500}
+          fill={INK}
+          opacity={0.55}
           fontFamily="Inter, sans-serif"
         >
           all quiet
         </text>
-      )}
-      {items.map((a, i) => {
-        const y = 52 + i * 18
-        return (
-          <g key={a.id}>
-            <text
-              x={32}
-              y={y + 4}
-              fontSize={9}
-              fill={INK}
-              fontFamily="'Space Grotesk', sans-serif"
-              fontWeight={600}
-            >
-              {ALERT_ICON[a.kind]}
-            </text>
-            <foreignObject x={42} y={y - 6} width={62} height={14}>
-              <div
-                style={{
-                  color: INK,
-                  fontFamily: 'Inter, sans-serif',
-                  fontSize: '8px',
-                  fontWeight: 500,
-                  lineHeight: 1.15,
-                  overflow: 'hidden',
-                  whiteSpace: 'nowrap',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {a.text}
-              </div>
-            </foreignObject>
-            <text
-              x={108}
-              y={y + 4}
-              textAnchor="end"
-              fontSize={7}
-              fill={INK}
-              opacity={0.5}
-              fontFamily="'Space Grotesk', sans-serif"
-              style={{ fontVariantNumeric: 'tabular-nums' }}
-            >
-              {a.ts}
-            </text>
+      </FaceFrame>
+    )
+  }
+
+  return (
+    <g
+      onClick={(e) => {
+        e.stopPropagation()
+        setIdx((i) => (i + 1) % items.length)
+      }}
+    >
+      <FaceFrame size={size}>
+        {/* Header — relative time */}
+        <text
+          x={70}
+          y={48}
+          textAnchor="middle"
+          fontSize={7}
+          fill={INK}
+          opacity={0.55}
+          letterSpacing={1.8}
+          fontFamily="Inter, sans-serif"
+          fontWeight={500}
+          style={{ textTransform: 'uppercase' }}
+        >
+          {a.ts}
+        </text>
+
+        {/* Big glyph centred */}
+        <g transform="translate(70 68)">{ALERT_GLYPH[a.kind](INK)}</g>
+
+        {/* Single caption line */}
+        <text
+          x={70}
+          y={94}
+          textAnchor="middle"
+          fontSize={9.5}
+          fontWeight={500}
+          fill={INK}
+          fontFamily="Inter, sans-serif"
+        >
+          {a.text}
+        </text>
+
+        {/* Pagination dots */}
+        {items.length > 1 && (
+          <g>
+            {items.map((_, i) => (
+              <circle
+                key={i}
+                cx={70 + (i - (items.length - 1) / 2) * 5}
+                cy={108}
+                r={1.2}
+                fill={INK}
+                opacity={i === idx ? 0.85 : 0.25}
+              />
+            ))}
           </g>
-        )
-      })}
-    </FaceFrame>
+        )}
+      </FaceFrame>
+    </g>
   )
 }
 

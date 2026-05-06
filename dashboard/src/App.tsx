@@ -205,7 +205,7 @@ function DashboardPage() {
                 : 'mock'}
             </button>
           </div>
-          <nav className="flex items-center gap-1">
+          <nav className="hidden md:flex items-center gap-1">
             {stateOrder.map((s) => (
               <button
                 key={s}
@@ -223,7 +223,7 @@ function DashboardPage() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 sm:px-8 py-10 space-y-12">
+      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
         {/* Child switcher */}
         {mockChildren.length > 1 && (
           <nav className="flex gap-2">
@@ -250,22 +250,28 @@ function DashboardPage() {
         )}
 
         {/* Hero */}
-        <section className="grid sm:grid-cols-[auto_1fr] items-center gap-8 sm:gap-12">
+        <section className="grid sm:grid-cols-[auto_1fr] items-center gap-5 sm:gap-12">
           <div className="flex justify-center">
-            <SparkV1 state={state} event={event} eventKey={eventKey} size={200} />
+            <SparkV1
+              state={state}
+              event={event}
+              eventKey={eventKey}
+              size={140}
+              className="sm:!w-[200px] sm:!h-[200px]"
+            />
           </div>
           <div className="text-center sm:text-left">
-            <div className="text-xs uppercase tracking-[0.12em] text-app-muted">
+            <div className="text-[10px] sm:text-xs uppercase tracking-[0.12em] text-app-muted">
               {child.lastSync}
             </div>
-            <h1 className="mt-2 text-[44px] sm:text-[56px] leading-[1.05] font-semibold tracking-tight">
+            <h1 className="mt-1 sm:mt-2 text-[34px] sm:text-[56px] leading-[1.05] font-semibold tracking-tight">
               {child.name}
-              <span className="text-app-muted font-normal text-2xl sm:text-3xl ml-3 align-middle">
+              <span className="text-app-muted font-normal text-lg sm:text-3xl ml-2 sm:ml-3 align-middle">
                 {child.age} {ageWord(child.age)}
               </span>
             </h1>
             <p
-              className={`mt-3 text-lg ${
+              className={`mt-2 sm:mt-3 text-base sm:text-lg ${
                 isWorried ? 'text-app-red font-medium' : 'text-app-ink-2'
               }`}
             >
