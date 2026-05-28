@@ -6,6 +6,7 @@
 ```
 dashboard/                 родительская панель (React+Vite, единая правда)
 firmware/
+  kairo-mvp/               реальная прошивка на Waveshare (Arduino IDE, рабочая)
   shared/                  spark_sprites.h + spark_renderer.h + gen_sprites.py
   track1-xiao/             валидированный production-стек (XIAO + GC9A01 + sensors)
   track2-amoled/            wow-демо на руке (Waveshare AMOLED 2.06")
@@ -69,6 +70,7 @@ python scripts/gen_sprites.py     # → firmware/shared/spark_sprites.h
 | Mock-данные двоих детей | [dashboard/src/mock.ts](dashboard/src/mock.ts) |
 | BLE-клиент (Web Bluetooth) | [dashboard/src/lib/bleClient.ts](dashboard/src/lib/bleClient.ts) |
 | Spark renderer для прошивки | [firmware/shared/spark_renderer.h](firmware/shared/spark_renderer.h) |
+| KairoMVP прошивка (рабочая) | [firmware/kairo-mvp/](firmware/kairo-mvp/) |
 | Track 1 (XIAO + sensors) | [firmware/track1-xiao/](firmware/track1-xiao/) |
 | Track 2 (AMOLED 2.06") | [firmware/track2-amoled/](firmware/track2-amoled/) |
 | Карта "спека ↔ дашборд" | [_spec_dashboard_report.md](_spec_dashboard_report.md) |

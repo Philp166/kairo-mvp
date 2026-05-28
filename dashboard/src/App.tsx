@@ -301,6 +301,9 @@ function DashboardPage() {
                   data-testid={`btn-${t.id}`}
                   onClick={() => {
                     if (t.id === 'hug') fireEvent('parent_touch', 1500)
+                    if (bleStatus === 'connected' && bleRef.current) {
+                      bleRef.current.sendHug().catch(console.error)
+                    }
                     appendEvent({
                       id: `tap-${t.id}-${Date.now()}`,
                       kind: 'parent_touch',

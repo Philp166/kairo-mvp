@@ -1,22 +1,23 @@
-// Web Bluetooth client for the Kairo Band (Track 1 firmware).
+// Web Bluetooth client for KairoMVP (firmware/kairo-mvp).
 //
-// UUIDs match firmware/track1-xiao/src/main.cpp. When real BLE pairing
-// (SSP Passkey, spec §5.5) lands these stay the same — only the bonded-
-// device list and pairing dialog change.
-//
-// Use: const ble = new KairoBle(); await ble.connect(onSnapshot);
+// UUIDs match firmware/kairo-mvp/ble_service.cpp.
+// Use: const ble = new KairoBle(); await ble.connect();
 
-const KAIRO_SERVICE_UUID = '5d7d0001-9b6e-4d51-92a1-7e73a1ce0001'
-const KAIRO_SNAPSHOT_CHAR_UUID = '5d7d0002-9b6e-4d51-92a1-7e73a1ce0001'
+const KAIRO_SERVICE_UUID = '4b414952-0001-0001-0001-000000000001'
+const KAIRO_DATA_CHAR_UUID = '4b414952-0001-0001-0001-000000000002'
+const KAIRO_CMD_CHAR_UUID = '4b414952-0001-0001-0001-000000000003'
 
 export interface KairoSnapshot {
   ts: number
   hr: number
   spo2: number
-  tempC: number
+  temp: number
   steps: number
   battery: number
+  motion: number
   state: 'calm' | 'active' | 'sleepy' | 'worried'
+  worn: boolean
+  event?: string
 }
 
 export type KairoBleStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'unsupported'
@@ -26,7 +27,8 @@ type StatusListener = (status: KairoBleStatus, msg?: string) => void
 
 export class KairoBle {
   private device: BluetoothDevice | null = null
-  private characteristic: BluetoothRemoteGATTCharacteristic | null = null
+  private dataChar: BluetoothRemoteGATTCharacteristic | null = null
+  private commandChar: BluetoothRemoteGATTCharacteristic | null = null
   private snapListener: SnapshotListener | null = null
   private statusListener: StatusListener | null = null
 
@@ -60,12 +62,16 @@ export class KairoBle {
 
       const server = await this.device.gatt!.connect()
       const service = await server.getPrimaryService(KAIRO_SERVICE_UUID)
-      this.characteristic = await service.getCharacteristic(KAIRO_SNAPSHOT_CHAR_UUID)
 
-      this.characteristic.addEventListener('characteristicvaluechanged', this.handleNotify)
-      await this.characteristic.startNotifications()
+      this.dataChar = await service.getCharacteristic(KAIRO_DATA_CHAR_UUID)
+      this.dataChar.addEventListener('characteristicvaluechanged', this.handleNotify)
+      await this.dataChar.startNotifications()
+
+      this.commandChar = await service.getCharacteristic(KAIRO_CMD_CHAR_UUID)
 
       this.emitStatus('connected')
+
+      await this.sendTimeSync()
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       this.emitStatus('disconnected', msg)
@@ -74,23 +80,48 @@ export class KairoBle {
   }
 
   async disconnect() {
-    if (this.characteristic) {
+    if (this.dataChar) {
       try {
-        await this.characteristic.stopNotifications()
+        await this.dataChar.stopNotifications()
       } catch {
         /* noop */
       }
-      this.characteristic.removeEventListener(
+      this.dataChar.removeEventListener(
         'characteristicvaluechanged',
         this.handleNotify,
       )
-      this.characteristic = null
+      this.dataChar = null
     }
+    this.commandChar = null
     if (this.device?.gatt?.connected) {
       this.device.gatt.disconnect()
     }
     this.device = null
     this.emitStatus('idle')
+  }
+
+  async sendCommand(cmd: object): Promise<void> {
+    if (!this.commandChar) return
+    const json = JSON.stringify(cmd)
+    const encoder = new TextEncoder()
+    await this.commandChar.writeValue(encoder.encode(json))
+  }
+
+  async sendHug(): Promise<void> {
+    await this.sendCommand({ cmd: 'parent_touch' })
+  }
+
+  async sendTimeSync(): Promise<void> {
+    const now = new Date()
+    await this.sendCommand({
+      cmd: 'set_time',
+      h: now.getHours(),
+      m: now.getMinutes(),
+      s: now.getSeconds(),
+      d: now.getDate(),
+      mo: now.getMonth() + 1,
+      y: now.getFullYear(),
+    })
   }
 
   private handleNotify = (event: Event) => {
