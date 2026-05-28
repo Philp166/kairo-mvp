@@ -142,11 +142,11 @@ function DashboardPage() {
   const child = liveSnap
     ? {
         ...baseChild,
-        hr: liveSnap.hr,
-        spo2: liveSnap.spo2,
-        tempC: liveSnap.tempC,
-        steps: liveSnap.steps,
-        battery: liveSnap.battery,
+        hr: liveSnap.hr ?? baseChild.hr,
+        spo2: liveSnap.spo2 ?? baseChild.spo2,
+        tempC: liveSnap.tempC ?? baseChild.tempC,
+        steps: liveSnap.steps ?? baseChild.steps,
+        battery: liveSnap.battery ?? baseChild.battery,
         lastSync: 'live',
       }
     : baseChild

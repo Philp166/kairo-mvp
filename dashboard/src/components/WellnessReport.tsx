@@ -215,12 +215,12 @@ export function WellnessReport(p: WellnessReportProps) {
           title="Skin temp"
           icon={<ThermometerIcon width={14} height={14} />}
           accent={tempBreach ? 'text-app-orange' : 'text-app-ink-2'}
-          value={range === '1d' ? p.tempC.toFixed(1) : fmtDelta(tempWin[tempWin.length - 1] ?? 0)}
+          value={range === '1d' ? (p.tempC ?? 0).toFixed(1) : fmtDelta(tempWin[tempWin.length - 1] ?? 0)}
           unit={range === '1d' ? '°C' : '°C Δ'}
           sub={
             tempBreach
               ? `swing of ${tempMaxAbs.toFixed(2)}° — wider than usual, keep an eye out`
-              : `usually ${p.tempBaseline.toFixed(1)}° · steady`
+              : `usually ${(p.tempBaseline ?? 0).toFixed(1)}° · steady`
           }
           chart={
             <Sparkline
