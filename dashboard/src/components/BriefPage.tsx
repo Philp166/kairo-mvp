@@ -315,19 +315,15 @@ function Headline({
   )
 }
 
-function trendWord(series: number[], inverted = false): string {
+function trendWord(series: number[], lowerIsBetter = false): string {
   if (series.length < 4) return 'stable'
   const recent = series.slice(-3).reduce((a, b) => a + b, 0) / 3
   const older = series.slice(-12, -9).reduce((a, b) => a + b, 0) / 3
   const diff = recent - older
-  const dir = diff > 0.5 ? 'up' : diff < -0.5 ? 'down' : 'stable'
-  if (inverted) {
-    if (dir === 'up') return 'rising'
-    if (dir === 'down') return 'easing'
-  }
-  if (dir === 'up') return 'rising'
-  if (dir === 'down') return 'easing'
-  return 'stable'
+  if (Math.abs(diff) <= 0.5) return 'stable'
+  const rising = diff > 0
+  if (lowerIsBetter) return rising ? 'rising ↑' : 'easing ↓'
+  return rising ? 'rising ↑' : 'declining ↓'
 }
 
 interface TrendChartProps {

@@ -31,14 +31,6 @@ export function LungsIcon(props: SVGProps<SVGSVGElement>) {
   )
 }
 
-export function ThermometerIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M14 4a2 2 0 0 0-4 0v10.54a4 4 0 1 0 4 0Z" />
-    </svg>
-  )
-}
-
 export function StepsIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <svg {...base} {...props}>
@@ -46,34 +38,6 @@ export function StepsIcon(props: SVGProps<SVGSVGElement>) {
       <circle cx="17" cy="11" r="2" />
       <circle cx="9" cy="15" r="2" />
       <circle cx="17" cy="19" r="2" />
-    </svg>
-  )
-}
-
-export function BatteryIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <rect x="2" y="7" width="18" height="10" rx="2" />
-      <line x1="22" y1="11" x2="22" y2="13" />
-      <rect x="4" y="9" width="10" height="6" rx="0.5" fill="currentColor" stroke="none" />
-    </svg>
-  )
-}
-
-export function SignalIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M5 12.55a11 11 0 0 1 14.08 0" />
-      <path d="M8.53 16.11a6 6 0 0 1 6.95 0" />
-      <line x1="12" y1="20" x2="12.01" y2="20" />
-    </svg>
-  )
-}
-
-export function HugIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z" />
     </svg>
   )
 }
@@ -154,23 +118,6 @@ export function SunIcon(props: SVGProps<SVGSVGElement>) {
       <line x1="20" y1="12" x2="22" y2="12" />
       <line x1="4.93" y1="19.07" x2="6.34" y2="17.66" />
       <line x1="17.66" y1="6.34" x2="19.07" y2="4.93" />
-    </svg>
-  )
-}
-
-export function PhoneIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92Z" />
-    </svg>
-  )
-}
-
-export function VideoIcon(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg {...base} {...props}>
-      <polygon points="23 7 16 12 23 17 23 7" />
-      <rect x="1" y="5" width="15" height="14" rx="2" />
     </svg>
   )
 }

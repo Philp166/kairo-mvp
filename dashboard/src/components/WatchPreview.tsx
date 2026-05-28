@@ -190,8 +190,8 @@ function FaceFrame({ size, children }: { size: number; children: React.ReactNode
   )
 }
 
-const DAY_RU = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
-const MONTH_RU = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const DAY_ABBR = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT']
+const MONTH_ABBR = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
 
 // ============================================================================
 // CLOCK — Apple-Watch-modular vibe: huge tabular HH:MM, blinking colon,
@@ -215,7 +215,7 @@ function ClockFace({ size, now }: { size: number; now: Date }) {
         fontWeight={500}
         style={{ textTransform: 'uppercase' }}
       >
-        {DAY_RU[now.getDay()]} · {now.getDate()} {MONTH_RU[now.getMonth()]}
+        {DAY_ABBR[now.getDay()]} · {now.getDate()} {MONTH_ABBR[now.getMonth()]}
       </text>
       <text
         x={70}
