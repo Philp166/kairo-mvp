@@ -114,13 +114,17 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
   /* ── Fetch data from API ── */
   const fetchAll = useCallback(async () => {
     try {
-      const [ov, ev, zn, sr, ch] = await Promise.all([
+      const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('timeout')), 8000)
+      )
+      const fetches = Promise.all([
         api.overview(CHILD_ID),
         api.events(CHILD_ID),
         api.zones(CHILD_ID),
         api.series(CHILD_ID, 24),
         api.child(CHILD_ID),
       ])
+      const [ov, ev, zn, sr, ch] = await Promise.race([fetches, timeout]) as Awaited<typeof fetches>
       setOverview(ov)
       setEvents(ev)
       setZones(zn)
