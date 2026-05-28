@@ -9,10 +9,10 @@ interface HeroPanelProps {
   scrubHour: number
   scrubMoment?: { note: string; noteRu: string; state: string }
   vitals: {
-    hr: { value: number; color: string }
-    spo2: { value: number; color: string }
+    hr: { value: number | string; color: string }
+    spo2: { value: number | string; color: string }
     temp: { value: string; color: string }
-    battery: { value: number; color: string }
+    battery: { value: number | string; color: string }
   }
   onTouch: (kind: string) => void
 }

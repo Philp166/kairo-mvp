@@ -1,24 +1,8 @@
-/** Kairo API client — talks to Express backend */
+/** Kairo API client — talks directly to Supabase */
 
-const BASE = import.meta.env.VITE_API_URL ?? ''
+import { supabase } from './supabase'
 
-async function get<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}`)
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
-  return res.json()
-}
-
-async function post<T>(path: string, body: unknown): Promise<T> {
-  const res = await fetch(`${BASE}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  if (!res.ok) throw new Error(`API ${res.status}: ${path}`)
-  return res.json()
-}
-
-/* ── Types from server ─────────────────────────────────── */
+/* ── Types ────────────────────────────────────────────── */
 
 export interface Child {
   id: string
@@ -27,6 +11,8 @@ export interface Child {
 }
 
 export interface Snapshot {
+  id?: number
+  child_id: string
   hr: number | null
   spo2: number | null
   temp_c: number | null
@@ -38,6 +24,7 @@ export interface Snapshot {
 
 export interface ApiEvent {
   id: number
+  child_id: string
   kind: string
   text: string
   ts: string
@@ -45,6 +32,7 @@ export interface ApiEvent {
 
 export interface Zone {
   id: string
+  child_id: string
   name: string
   kind: string
   radius_m: number
@@ -54,6 +42,7 @@ export interface Zone {
 }
 
 export interface DailyStat {
+  child_id: string
   day: string
   hr_avg: number | null
   hr_min: number | null
@@ -66,6 +55,8 @@ export interface DailyStat {
 }
 
 export interface SleepSession {
+  id?: number
+  child_id: string
   bed_time: string
   wake_time: string | null
   total_min: number | null
@@ -82,20 +73,62 @@ export interface Overview {
   lastSleep: SleepSession | null
 }
 
-/* ── API calls ─────────────────────────────────────────── */
+/* ── API calls ────────────────────────────────────────── */
 
 export const api = {
-  /** List all children */
-  children: () => get<Child[]>('/api/children'),
+  /** Check if Supabase is configured */
+  async health(): Promise<boolean> {
+    const { error } = await supabase.from('children').select('id').limit(1)
+    return !error
+  },
 
-  /** Get child with latest snapshot */
-  child: (id: string) => get<Child & { latestSnapshot: Snapshot | null }>(`/api/children/${id}`),
+  /** Get child by id */
+  async child(id: string): Promise<Child | null> {
+    const { data } = await supabase
+      .from('children')
+      .select('id, name, age')
+      .eq('id', id)
+      .single()
+    return data
+  },
 
-  /** Full dashboard overview — snapshot + today stats + last sleep */
-  overview: (childId: string) => get<Overview>(`/api/stats/${childId}/overview`),
+  /** Full dashboard overview */
+  async overview(childId: string): Promise<Overview> {
+    const [snapRes, countRes, todayRes, sleepRes] = await Promise.all([
+      supabase
+        .from('snapshots')
+        .select('*')
+        .eq('child_id', childId)
+        .order('ts', { ascending: false })
+        .limit(1),
+      supabase
+        .from('snapshots')
+        .select('id', { count: 'exact', head: true })
+        .eq('child_id', childId),
+      supabase
+        .from('daily_stats')
+        .select('*')
+        .eq('child_id', childId)
+        .eq('day', new Date().toISOString().slice(0, 10))
+        .limit(1),
+      supabase
+        .from('sleep_sessions')
+        .select('*')
+        .eq('child_id', childId)
+        .order('bed_time', { ascending: false })
+        .limit(1),
+    ])
+
+    return {
+      snapshot: snapRes.data?.[0] ?? null,
+      snapshotCount: countRes.count ?? 0,
+      today: todayRes.data?.[0] ?? null,
+      lastSleep: sleepRes.data?.[0] ?? null,
+    }
+  },
 
   /** Post a BLE snapshot */
-  postSnapshot: (data: {
+  async postSnapshot(data: {
     childId: string
     hr?: number
     spo2?: number
@@ -103,31 +136,93 @@ export const api = {
     steps?: number
     battery?: number
     state?: string
-  }) => post<{ id: number; ts: string }>('/api/snapshots', data),
+  }) {
+    const { data: row, error } = await supabase
+      .from('snapshots')
+      .insert({
+        child_id: data.childId,
+        hr: data.hr ?? null,
+        spo2: data.spo2 ?? null,
+        temp_c: data.tempC ?? null,
+        steps: data.steps ?? null,
+        battery: data.battery ?? null,
+        state: data.state ?? null,
+      })
+      .select('id, ts')
+      .single()
+    if (error) throw error
+    return row
+  },
 
-  /** Get snapshot series for charts */
-  series: (childId: string, hours = 24) =>
-    get<Snapshot[]>(`/api/snapshots/${childId}/series?hours=${hours}`),
+  /** Get snapshot series for charts (last N hours) */
+  async series(childId: string, hours = 24): Promise<Snapshot[]> {
+    const since = new Date(Date.now() - hours * 3600_000).toISOString()
+    const { data } = await supabase
+      .from('snapshots')
+      .select('*')
+      .eq('child_id', childId)
+      .gte('ts', since)
+      .order('ts', { ascending: true })
+    return data ?? []
+  },
 
   /** Get recent events */
-  events: (childId: string, limit = 20) =>
-    get<ApiEvent[]>(`/api/events/${childId}?limit=${limit}`),
+  async events(childId: string, limit = 20): Promise<ApiEvent[]> {
+    const { data } = await supabase
+      .from('events')
+      .select('id, child_id, kind, text, ts')
+      .eq('child_id', childId)
+      .order('ts', { ascending: false })
+      .limit(limit)
+    return data ?? []
+  },
 
-  /** Post an event (haptic touch, geofence, etc.) */
-  postEvent: (data: { childId: string; kind: string; text: string }) =>
-    post<{ id: number; ts: string }>('/api/events', data),
+  /** Post an event */
+  async postEvent(data: { childId: string; kind: string; text: string }) {
+    const { data: row, error } = await supabase
+      .from('events')
+      .insert({
+        child_id: data.childId,
+        kind: data.kind,
+        text: data.text,
+      })
+      .select('id, ts')
+      .single()
+    if (error) throw error
+    return row
+  },
 
   /** Get geofence zones */
-  zones: (childId: string) => get<Zone[]>(`/api/zones/${childId}`),
+  async zones(childId: string): Promise<Zone[]> {
+    const { data } = await supabase
+      .from('zones')
+      .select('*')
+      .eq('child_id', childId)
+      .order('name')
+    return data ?? []
+  },
 
-  /** Get daily stats for trend charts */
-  daily: (childId: string, days = 30) =>
-    get<DailyStat[]>(`/api/stats/${childId}/daily?days=${days}`),
+  /** Get daily stats */
+  async daily(childId: string, days = 30): Promise<DailyStat[]> {
+    const since = new Date(Date.now() - days * 86400_000).toISOString().slice(0, 10)
+    const { data } = await supabase
+      .from('daily_stats')
+      .select('*')
+      .eq('child_id', childId)
+      .gte('day', since)
+      .order('day', { ascending: true })
+    return data ?? []
+  },
 
   /** Get recent sleep sessions */
-  sleep: (childId: string, days = 7) =>
-    get<SleepSession[]>(`/api/stats/${childId}/sleep?days=${days}`),
-
-  /** Health check */
-  health: () => get<{ status: string; ts: string }>('/api/health'),
+  async sleep(childId: string, days = 7): Promise<SleepSession[]> {
+    const since = new Date(Date.now() - days * 86400_000).toISOString()
+    const { data } = await supabase
+      .from('sleep_sessions')
+      .select('*')
+      .eq('child_id', childId)
+      .gte('bed_time', since)
+      .order('bed_time', { ascending: false })
+    return data ?? []
+  },
 }

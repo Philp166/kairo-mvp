@@ -122,7 +122,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       setEvents(ev)
       setZones(zn)
       setSeries(sr)
-      setChildName(ch.name)
+      setChildName(ch?.name ?? 'Child')
       setApiOk(true)
       if (ov.snapshot?.state) setSparkState(ov.snapshot.state as SparkState)
     } catch (e) {

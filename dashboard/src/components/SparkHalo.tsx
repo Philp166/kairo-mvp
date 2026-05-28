@@ -11,7 +11,7 @@ import type { SparkState } from './Spark';
 // ── Types ────────────────────────────────────────────────────
 
 interface VitalValue {
-  value: number;
+  value: number | string;
   color: string;
 }
 
@@ -73,8 +73,10 @@ function HaloRing({
 
 // ── Utility ──────────────────────────────────────────────────
 
-function norm(val: number, min: number, max: number): number {
-  return Math.max(0, Math.min(100, ((val - min) / (max - min)) * 100));
+function norm(val: number | string, min: number, max: number): number {
+  const n = typeof val === 'string' ? parseFloat(val) : val
+  if (isNaN(n)) return 0
+  return Math.max(0, Math.min(100, ((n - min) / (max - min)) * 100));
 }
 
 // ── Main SparkHalo component ─────────────────────────────────
@@ -179,7 +181,7 @@ export function SparkHalo({ sparkState, vitals, size = 280 }: SparkHaloProps) {
         <HaloRing
           radius={rBatt}
           strokeWidth={2}
-          fillPct={vitals.battery.value}
+          fillPct={typeof vitals.battery.value === 'number' ? vitals.battery.value : 0}
           color={vitals.battery.color}
         />
 
