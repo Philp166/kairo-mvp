@@ -1,22 +1,25 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { SparkV1, type SparkState, type SparkEvent } from './components/Spark/SparkV1'
-import { EventLog, type KairoEvent } from './components/EventLog'
-import { ScheduleCard, type ScheduleRule } from './components/ScheduleCard'
-import { GeofenceList } from './components/GeofenceList'
-import { SosBanner } from './components/SosBanner'
-import { LiveMap } from './components/LiveMap'
-import { WellnessReport } from './components/WellnessReport'
-import { ToastHost, type ToastSpec } from './components/Toast'
+import { LangProvider, useT, type Lang } from './lib/i18n'
+import { DashboardHeader } from './components/DashboardHeader'
+import { HeroPanel } from './components/HeroPanel'
+import { KairoToast, type ToastData } from './components/KairoToast'
+import { SectionHead } from './components/SectionHead'
+import { VitalChipBank, type VitalChipProps } from './components/VitalChip'
+import MoodScrub, { DAY_MOODS } from './components/MoodScrub'
+import HrTrendChart from './components/HrTrendChart'
+import { StatTile, HrvGauge } from './components/KairoStatTile'
+import Carousel from './components/Carousel'
+import ScheduleArc from './components/ScheduleArc'
+import LocationRadar from './components/LocationRadar'
+import ActivityTape from './components/ActivityTape'
 import { WatchPage } from './components/WatchPage'
 import { BriefPage } from './components/BriefPage'
 import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
-import { SchoolIcon } from './components/icons'
-import { useLogout, useAuthEmail } from './components/AuthGate'
-import { OnboardingBanner } from './components/OnboardingBanner'
+import type { SparkState } from './components/Spark'
 
 function useHashRoute() {
-  const [hash, setHash] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''))
+  const [hash, setHash] = useState(() => window.location.hash)
   useEffect(() => {
     const onChange = () => setHash(window.location.hash)
     window.addEventListener('hashchange', onChange)
@@ -25,472 +28,215 @@ function useHashRoute() {
   return hash
 }
 
-const stateLabels: Record<SparkState, { label: string; sub: string }> = {
-  calm: { label: 'Calm', sub: 'at home, all good' },
-  active: { label: 'Active', sub: 'moving, energetic' },
-  sleepy: { label: 'Sleepy', sub: 'winding down' },
-  worried: { label: 'Alert', sub: 'check on her' },
-}
-
-const stateOrder: SparkState[] = ['calm', 'active', 'sleepy', 'worried']
-
 function App() {
+  const [lang, setLang] = useState<Lang>('en')
   const hash = useHashRoute()
-  if (hash.startsWith('#watch')) {
-    const watchChildId = hash.split('/')[1]
-    return <WatchPage childId={watchChildId} />
-  }
-  if (hash.startsWith('#brief')) {
-    const briefChildId = hash.split('/')[1]
-    return <BriefPage childId={briefChildId} />
-  }
-  return <DashboardPage />
+
+  if (hash.startsWith('#watch')) return <WatchPage childId={hash.split('/')[1]} />
+  if (hash.startsWith('#brief')) return <BriefPage childId={hash.split('/')[1]} />
+
+  return (
+    <LangProvider lang={lang}>
+      <DashboardMain lang={lang} onLang={setLang} />
+    </LangProvider>
+  )
 }
 
-function DashboardPage() {
-  const logout = useLogout()
-  const authEmail = useAuthEmail()
-  const [childId, setChildId] = useState(mockChildren[0].id)
-  const baseChild = mockChildren.find((c) => c.id === childId) ?? mockChildren[0]
-  const [state, setState] = useState<SparkState>(baseChild.state)
-  const [event, setEvent] = useState<SparkEvent>(null)
-  const [eventKey, setEventKey] = useState(0)
-  const [transientLog, setTransientLog] = useState<KairoEvent[]>([])
-  const [sosAcked, setSosAcked] = useState(false)
-  const [rules, setRules] = useState<ScheduleRule[]>([
-    {
-      id: 'r-bed',
-      kind: 'bedtime',
-      label: 'Напоминание перед сном',
-      enabled: true,
-      time: '21:30',
-    },
-    {
-      id: 'r-school',
-      kind: 'school',
-      label: 'Школьный режим',
-      enabled: true,
-      start: '08:30',
-      end: '14:00',
-    },
-  ])
-  const [liveSnap, setLiveSnap] = useState<KairoSnapshot | null>(null)
-  const [bleStatus, setBleStatus] = useState<KairoBleStatus>('idle')
-  const [bleError, setBleError] = useState<string | null>(null)
-  const [toasts, setToasts] = useState<ToastSpec[]>([])
-  const bleRef = useRef<KairoBle | null>(null)
-  const eventTimer = useRef<number | null>(null)
+function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
+  const { t } = useT()
+  const child = mockChildren[0]
 
-  const dismissToast = useCallback((id: string) => {
-    setToasts((arr) => arr.filter((t) => t.id !== id))
-  }, [])
-  const pushToast = useCallback((t: Omit<ToastSpec, 'id'>) => {
-    setToasts((arr) => [...arr, { ...t, id: `t-${Date.now()}-${Math.random()}` }])
-  }, [])
+  const [bleStatus, setBleStatus] = useState<KairoBleStatus>('idle')
+  const [liveSnap, setLiveSnap] = useState<KairoSnapshot | null>(null)
+  const bleRef = useRef<KairoBle | null>(null)
+
+  const [sparkState, setSparkState] = useState<SparkState>(child.state)
+  const [scrubHour, setScrubHour] = useState(23)
+  const [toast, setToast] = useState<ToastData | null>(null)
 
   useEffect(() => {
-    setState(baseChild.state)
-    setEvent(null)
-    setTransientLog([])
-    setSosAcked(false)
-  }, [baseChild.id, baseChild.state])
+    if (scrubHour >= 23) {
+      setSparkState(liveSnap ? (liveSnap.state as SparkState) : child.state)
+    } else {
+      setSparkState(DAY_MOODS[scrubHour].state)
+    }
+  }, [scrubHour, liveSnap, child.state])
 
-  useEffect(
-    () => () => {
-      if (eventTimer.current) window.clearTimeout(eventTimer.current)
-    },
-    [],
-  )
-
-  function fireEvent(e: SparkEvent, holdMs: number) {
-    if (eventTimer.current) window.clearTimeout(eventTimer.current)
-    setEvent(e)
-    setEventKey((k) => k + 1)
-    eventTimer.current = window.setTimeout(() => setEvent(null), holdMs)
-  }
-
-  function appendEvent(ev: KairoEvent) {
-    setTransientLog((arr) => [ev, ...arr])
-  }
-
-  async function toggleLive() {
+  async function toggleBle() {
     if (bleStatus === 'connected' || bleStatus === 'connecting') {
       await bleRef.current?.disconnect()
       setLiveSnap(null)
       return
     }
-    setBleError(null)
     if (!bleRef.current) {
       const b = new KairoBle()
       b.onSnapshot((s) => {
         setLiveSnap(s)
-        setState(s.state)
+        setSparkState(s.state as SparkState)
       })
-      b.onStatus((status, msg) => {
-        setBleStatus(status)
-        if (msg) setBleError(msg)
-      })
+      b.onStatus((status) => setBleStatus(status))
       bleRef.current = b
     }
     try {
       await bleRef.current.connect()
-    } catch {
-      // Status listener already captured the error.
-    }
+    } catch { /* status listener captured error */ }
   }
 
-  const child = liveSnap
+  const merged = liveSnap
     ? {
-        ...baseChild,
-        hr: liveSnap.hr ?? baseChild.hr,
-        spo2: liveSnap.spo2 ?? baseChild.spo2,
-        tempC: liveSnap.tempC ?? baseChild.tempC,
-        steps: liveSnap.steps ?? baseChild.steps,
-        battery: liveSnap.battery ?? baseChild.battery,
-        lastSync: 'live',
+        hr: liveSnap.hr ?? child.hr,
+        spo2: liveSnap.spo2 ?? child.spo2,
+        tempC: liveSnap.tempC ?? child.tempC,
+        steps: liveSnap.steps ?? child.steps,
+        battery: liveSnap.battery ?? child.battery,
       }
-    : baseChild
-  const isWorried = state === 'worried'
-  const ageWord = (n: number) => (n === 1 ? 'yr old' : 'yrs old')
+    : child
 
-  const allEvents = [...transientLog, ...child.events]
+  const handleTouch = useCallback(
+    (kind: string) => {
+      if (bleStatus === 'connected' && bleRef.current) {
+        bleRef.current.sendHug().catch(() => {})
+      }
+      const map: Record<string, ToastData> = {
+        hug:     { glyph: '♥', title: t('toast.hug.title'),   sub: t('toast.hug.sub'),   hap: 'HAP-03' },
+        cheer:   { glyph: '★', title: t('toast.cheer.title'), sub: t('toast.cheer.sub'), hap: 'HAP-02' },
+        bedtime: { glyph: '☾', title: t('toast.bed.title'),   sub: t('toast.bed.sub'),   hap: 'HAP-04' },
+      }
+      setToast(map[kind] ?? map.hug)
+    },
+    [bleStatus, t],
+  )
 
-  const homeZone = child.zones.find((z) => z.kind === 'home')
-  const schoolZone = child.zones.find((z) => z.kind === 'school')
-  const place = child.location.place
-  const currentPlace: 'home' | 'school' | 'between' =
-    place === homeZone?.name
-      ? 'home'
-      : place === schoolZone?.name
-      ? 'school'
-      : /school|daycare|kinder/i.test(place)
-      ? 'school'
-      : /home/i.test(place)
-      ? 'home'
-      : 'between'
+  const tempDelta = merged.tempC - child.tempBaseline
+  const tempStr = `${tempDelta >= 0 ? '+' : ''}${tempDelta.toFixed(1)}`
 
-  const schoolRule = rules.find((r) => r.kind === 'school' && r.enabled)
-  const inSchoolWindow = (() => {
-    if (!schoolRule?.start || !schoolRule?.end) return false
-    const now = new Date()
-    const cur = now.getHours() * 60 + now.getMinutes()
-    const [sh, sm] = schoolRule.start.split(':').map(Number)
-    const [eh, em] = schoolRule.end.split(':').map(Number)
-    return cur >= sh * 60 + sm && cur <= eh * 60 + em
-  })()
-  const schoolModeLive = !!schoolRule && currentPlace === 'school' && inSchoolWindow
+  const heroVitals = {
+    hr:      { value: merged.hr, color: 'var(--accent)' },
+    spo2:    { value: merged.spo2, color: 'var(--ok)' },
+    temp:    { value: tempStr, color: tempDelta > 0.3 ? 'var(--alert)' : 'var(--ok)' },
+    battery: { value: merged.battery, color: merged.battery < 20 ? 'var(--alert)' : 'var(--ok)' },
+  }
+
+  const scrubMoment = scrubHour < 23 ? DAY_MOODS[scrubHour] : undefined
+
+  const vitals: VitalChipProps[] = [
+    {
+      slot: 'HR',
+      label: t('v.hr.label'),
+      value: merged.hr,
+      unit: 'BPM',
+      delta: t('v.hr.delta') + ` ${merged.hr > child.hrBaseline ? '+' : ''}${merged.hr - child.hrBaseline}`,
+      status: merged.hr > 120 ? 'alert' : merged.hr > 100 ? 'warn' : 'norm',
+      color: 'var(--accent)',
+      data: child.hrSeries,
+    },
+    {
+      slot: 'SPO2',
+      label: t('v.spo2.label'),
+      value: merged.spo2,
+      unit: '%',
+      delta: t('v.spo2.delta'),
+      status: merged.spo2 < 94 ? 'alert' : merged.spo2 < 96 ? 'warn' : 'norm',
+      color: 'var(--ok)',
+      data: child.spo2NightSeries,
+    },
+    {
+      slot: 'TEMP',
+      label: t('v.temp.label'),
+      value: merged.tempC?.toFixed(1) ?? '—',
+      unit: '°C',
+      delta: t('v.temp.delta'),
+      status: Math.abs(tempDelta) > 0.5 ? 'warn' : 'norm',
+      color: 'var(--lavender)',
+      data: child.tempDeltaSeries.map((d) => child.tempBaseline + d),
+    },
+    {
+      slot: 'STEP',
+      label: t('v.step.label'),
+      value: merged.steps.toLocaleString(),
+      unit: '',
+      delta: t('v.step.delta'),
+      status: merged.steps >= child.stepsGoal ? 'norm' : 'warn',
+      color: 'var(--ink-2)',
+      data: child.stepsDailySeries,
+    },
+  ]
 
   return (
-    <div className="min-h-screen bg-app-bg text-app-ink">
-      <header className="border-b border-app-line bg-app-bg/80 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-          <div className="flex items-baseline gap-3">
-            <span className="text-[15px] font-semibold tracking-tight">Kairo</span>
-            <span className="text-xs text-app-muted">parent dashboard</span>
-            <button
-              onClick={toggleLive}
-              title={bleError ?? ''}
-              className={`cursor-pointer text-[11px] px-2 py-0.5 rounded-full border transition-colors duration-150 ${
-                bleStatus === 'connected'
-                  ? 'bg-app-green/10 border-app-green/30 text-app-green'
-                  : bleStatus === 'connecting'
-                  ? 'bg-app-line border-app-line-2 text-app-muted'
-                  : bleStatus === 'unsupported'
-                  ? 'bg-app-line border-app-line-2 text-app-muted/70 cursor-not-allowed'
-                  : 'bg-app-surface border-app-line-2 text-app-muted hover:text-app-ink'
-              }`}
-            >
-              {bleStatus === 'connected'
-                ? '● live'
-                : bleStatus === 'connecting'
-                ? 'connecting…'
-                : bleStatus === 'unsupported'
-                ? 'live N/A'
-                : 'mock'}
-            </button>
-          </div>
-          <div className="flex items-center gap-3">
-            <nav className="hidden md:flex items-center gap-1">
-              {stateOrder.map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setState(s)}
-                  className={`text-[13px] cursor-pointer px-3 py-1.5 rounded-full transition-colors duration-200 ${
-                    s === state
-                      ? 'bg-app-ink text-white'
-                      : 'text-app-muted hover:text-app-ink'
-                  }`}
-                >
-                  {stateLabels[s].label}
-                </button>
-              ))}
-            </nav>
-            <div className="hidden sm:flex items-center gap-2 text-xs text-app-muted ml-2 border-l border-app-line-2 pl-3">
-              <span className="truncate max-w-[120px]">{authEmail}</span>
-              <button
-                onClick={() => logout?.()}
-                className="cursor-pointer text-app-muted hover:text-app-ink transition-colors"
-              >
-                Sign out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="dashboard-root">
+      <DashboardHeader
+        lang={lang}
+        onLang={onLang}
+        ble={bleStatus === 'connected' ? 'live' : 'mock'}
+        onToggleBle={toggleBle}
+        childName={child.name}
+        childInitial={child.name[0]}
+      />
 
-      <main className="max-w-5xl mx-auto px-5 sm:px-8 py-6 sm:py-10 space-y-8 sm:space-y-12">
-        {/* Child switcher */}
-        {mockChildren.length > 1 && (
-          <nav className="flex gap-2">
-            {mockChildren.map((c) => {
-              const active = c.id === childId
-              return (
-                <button
-                  key={c.id}
-                  onClick={() => setChildId(c.id)}
-                  className={`cursor-pointer text-[13px] px-3.5 py-1.5 rounded-full border transition-colors duration-200 ${
-                    active
-                      ? 'bg-app-ink text-white border-app-ink'
-                      : 'border-app-line-2 text-app-muted hover:text-app-ink hover:border-app-ink/30'
-                  }`}
-                >
-                  {c.name}
-                  <span className={`ml-1.5 text-xs ${active ? 'text-white/60' : 'text-app-muted'}`}>
-                    {c.age}
-                  </span>
-                </button>
-              )
-            })}
-          </nav>
-        )}
-
-        {/* BLE onboarding */}
-        <OnboardingBanner
-          bleStatus={bleStatus}
-          onConnect={toggleLive}
-          lastDataAgo={liveSnap ? 'just now' : undefined}
+      <main className="dash-main">
+        <HeroPanel
+          sparkState={sparkState}
+          scrubHour={scrubHour}
+          scrubMoment={scrubMoment}
+          vitals={heroVitals}
+          onTouch={handleTouch}
         />
 
-        {/* Hero */}
-        <section className="grid sm:grid-cols-[auto_1fr] items-center gap-5 sm:gap-12">
-          <div className="flex justify-center">
-            <SparkV1
-              state={state}
-              event={event}
-              eventKey={eventKey}
-              size={140}
-              className="sm:!w-[200px] sm:!h-[200px]"
-            />
-          </div>
-          <div className="text-center sm:text-left">
-            <div className="text-[10px] sm:text-xs uppercase tracking-[0.12em] text-app-muted">
-              {child.lastSync}
-            </div>
-            <h1 className="mt-1 sm:mt-2 text-[34px] sm:text-[56px] leading-[1.05] font-semibold tracking-tight">
-              {child.name}
-              <span className="text-app-muted font-normal text-lg sm:text-3xl ml-2 sm:ml-3 align-middle">
-                {child.age} {ageWord(child.age)}
-              </span>
-            </h1>
-            <p
-              className={`mt-2 sm:mt-3 text-base sm:text-lg ${
-                isWorried ? 'text-app-red font-medium' : 'text-app-ink-2'
-              }`}
-            >
-              {stateLabels[state].label} · {stateLabels[state].sub}
-            </p>
+        <SectionHead num="01" titleKey="sec.vitals.title" subKey="sec.vitals.sub" />
+        <VitalChipBank vitals={vitals} scrubHour={scrubHour < 23 ? scrubHour : null} />
 
-            {schoolModeLive && (
-              <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-app-blue bg-app-blue/10 rounded-full px-2.5 py-1">
-                <SchoolIcon width={13} height={13} />
-                School mode · quiet pulse every 20 min
-              </div>
-            )}
+        <SectionHead num="02" titleKey="sec.scrub.title" subKey="sec.scrub.sub" />
+        <MoodScrub scrubHour={scrubHour} onScrub={setScrubHour} />
 
-            {/* Quick taps — preset, no free text. Spec: not messaging /
-                not social, just simple acknowledgements that buzz the band. */}
-            <div className="mt-5 flex flex-wrap gap-1.5 justify-center sm:justify-start">
-              {(
-                [
-                  { id: 'hug', emoji: '💛', label: 'Hug', primary: true, hap: 'HAP-03' },
-                  { id: 'cheer', emoji: '⭐', label: 'Cheer', primary: false, hap: 'HAP-02' },
-                  { id: 'bedtime', emoji: '🌙', label: 'Bedtime', primary: false, hap: 'HAP-04' },
-                  { id: 'home', emoji: '🏠', label: 'Come home', primary: false, hap: 'HAP-03' },
-                ] as const
-              ).map((t) => (
-                <button
-                  key={t.id}
-                  data-testid={`btn-${t.id}`}
-                  onClick={() => {
-                    if (t.id === 'hug') fireEvent('parent_touch', 1500)
-                    if (bleStatus === 'connected' && bleRef.current) {
-                      bleRef.current.sendHug().catch(console.error)
-                    }
-                    appendEvent({
-                      id: `tap-${t.id}-${Date.now()}`,
-                      kind: 'parent_touch',
-                      text: `${t.emoji} ${t.label} sent to ${child.name}`,
-                      ts: 'just now',
-                    })
-                    pushToast({
-                      emoji: t.emoji,
-                      title: `${t.label} sent to ${child.name}'s band`,
-                      sub: `soft buzz · ${t.hap}`,
-                    })
-                  }}
-                  className={`cursor-pointer text-[13px] font-medium px-3.5 py-2 rounded-full transition-all duration-150 inline-flex items-center gap-1.5 active:scale-[0.97] ${
-                    t.primary
-                      ? 'bg-app-ink text-white hover:opacity-90'
-                      : 'bg-app-surface border border-app-line-2 text-app-ink hover:border-app-ink/30 hover:bg-app-line/40'
-                  }`}
-                >
-                  <span aria-hidden>{t.emoji}</span>
-                  {t.label}
-                </button>
-              ))}
-            </div>
-            <div className="mt-2 text-[11px] text-app-muted text-center sm:text-left">
-              One-tap signals — no chat, no free text. The band buzzes once.
-            </div>
-          </div>
-        </section>
+        <SectionHead num="03" titleKey="sec.trends.title" subKey="sec.trends.sub" />
+        <HrTrendChart data={child.hrSeries} scrubHour={scrubHour < 23 ? scrubHour : null} />
 
-        {/* SOS — only when worried */}
-        {isWorried && (
-          <section>
-            <SosBanner
-              childName={child.name}
-              acknowledged={sosAcked}
-              onAcknowledge={() => {
-                if (!sosAcked) {
-                  appendEvent({
-                    id: `sos-ack-${Date.now()}`,
-                    kind: 'parent_touch',
-                    text: `You acknowledged ${child.name}'s alert`,
-                    ts: 'just now',
-                  })
-                }
-                setSosAcked((v) => !v)
-              }}
-              triggeredAgo="2 min ago"
-            />
-          </section>
-        )}
-
-        {/* Wellness report — single source of truth for vitals trends */}
-        <section>
-          <WellnessReport
-            hr={child.hr}
-            hrBaseline={child.hrBaseline}
-            spo2={child.spo2}
-            tempC={child.tempC}
-            tempBaseline={child.tempBaseline}
-            steps={child.steps}
-            stepsGoal={child.stepsGoal}
-            battery={child.battery}
-            wearPct={child.wearPct}
-            lastSync={child.lastSync}
-            hrSeries={child.hrSeries}
-            hrSeriesWeek={child.hrSeriesWeek}
-            hrSeriesMonth={child.hrSeriesMonth}
-            hrvSeries={child.hrvSeries}
-            spo2NightSeries={child.spo2NightSeries}
-            tempDeltaSeries={child.tempDeltaSeries}
-            sleepScore={child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 80}
-            sleepScoreSeries={child.sleepScoreSeries}
-            stepsDailySeries={child.stepsDailySeries}
-            briefHref={`#brief/${child.id}`}
-            briefMonths={child.record.monthsTracked}
+        <div className="stat-row">
+          <StatTile
+            slot="SLEEP"
+            label={t('stat.sleep.label')}
+            value={child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 87}
+            unit="/100"
+            sub={t('stat.sleep.sub')}
+            color="var(--lavender)"
           />
-        </section>
-
-        {/* Geo: zone overview (intentionally no precise GPS — wellness, not surveillance) */}
-        <section>
-          <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
-            <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">Location</h2>
-            <span className="text-xs text-app-muted">geofence overview</span>
-          </div>
-          <div className="space-y-4">
-            <LiveMap
-              lat={child.location.lat}
-              lng={child.location.lng}
-              zoneStatus={currentPlace}
-              currentZoneName={
-                currentPlace === 'home'
-                  ? homeZone?.name
-                  : currentPlace === 'school'
-                  ? schoolZone?.name ?? child.location.place
-                  : null
-              }
-              currentDuration={child.location.duration}
-              fixAgo={liveSnap ? 'updated live' : `updated ${child.lastSync}`}
-            />
-            <GeofenceList
-              zones={child.zones}
-              currentZoneId={
-                currentPlace === 'home'
-                  ? homeZone?.id
-                  : currentPlace === 'school'
-                  ? schoolZone?.id
-                  : undefined
-              }
-              currentDuration={child.location.duration}
-            />
-          </div>
-        </section>
-
-        {/* Schedule */}
-        <section>
-          <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-4">
-            Band schedule
-          </h2>
-          <ScheduleCard childName={child.name} rules={rules} onChange={setRules} />
-        </section>
-
-        {/* Events */}
-        <section>
-          <div className="flex items-baseline justify-between mb-2">
-            <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">
-              Activity
-            </h2>
-            <span className="text-xs text-app-muted">today</span>
-          </div>
-          <div className="rounded-2xl bg-app-surface border border-app-line px-5">
-            <EventLog events={allEvents} />
-          </div>
-        </section>
-
-        {/* Watch preview link */}
-        <section>
-          <a
-            href={`#watch/${child.id}`}
-            className="block rounded-2xl border border-app-line bg-app-surface p-5 sm:p-6 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
+          <StatTile
+            slot="HRV"
+            label={t('stat.hrv.label')}
+            value={child.hrvSeries[child.hrvSeries.length - 1] ?? 42}
+            unit="ms"
+            sub={t('stat.hrv.sub')}
+            color="var(--accent)"
           >
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <div className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-1">
-                  What {child.name} sees
-                </div>
-                <div className="text-base font-medium">
-                  Open watch preview →
-                </div>
-                <div className="text-xs text-app-muted mt-1">
-                  Glanceable faces — points back to the kid, not the device
-                </div>
-              </div>
-              <div className="hidden sm:block">
-                <SparkV1 state={state} size={64} animate={false} />
-              </div>
-            </div>
-          </a>
-        </section>
+            <HrvGauge value={child.hrvSeries[child.hrvSeries.length - 1] ?? 42} />
+          </StatTile>
+        </div>
+
+        <SectionHead num="04" titleKey="sec.rhythm.title" subKey="sec.rhythm.sub" />
+        <Carousel
+          items={[
+            <ScheduleArc key="arc" bedStart={21.5} bedEnd={7} schoolStart={8.5} schoolEnd={14} />,
+            <LocationRadar
+              key="radar"
+              zones={child.zones}
+              currentPlace={child.location.place}
+              currentDuration={child.location.duration}
+              childName={child.name}
+              lastSync={child.lastSync}
+            />,
+          ]}
+          label="PANELS"
+        />
+
+        <SectionHead num="05" titleKey="sec.tape.title" subKey="sec.tape.sub" />
+        <ActivityTape events={child.events} />
+
+        <footer className="dash-footer mono">
+          {t('footer.tag')}
+        </footer>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 sm:px-8 pb-10 pt-2 text-xs text-app-muted">
-        Kairo · MVP demo · wellness signals, not medical diagnosis
-      </footer>
-
-      <ToastHost toasts={toasts} onDismiss={dismissToast} />
+      <KairoToast toast={toast} onDismiss={() => setToast(null)} />
     </div>
   )
 }
