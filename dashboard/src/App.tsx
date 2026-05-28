@@ -142,11 +142,11 @@ function DashboardPage() {
   const child = liveSnap
     ? {
         ...baseChild,
-        hr: liveSnap.hr ?? baseChild.hr,
-        spo2: liveSnap.spo2 ?? baseChild.spo2,
-        tempC: liveSnap.tempC ?? baseChild.tempC,
-        steps: liveSnap.steps ?? baseChild.steps,
-        battery: liveSnap.battery ?? baseChild.battery,
+        hr: liveSnap.hr,
+        spo2: liveSnap.spo2,
+        tempC: liveSnap.tempC,
+        steps: liveSnap.steps,
+        battery: liveSnap.battery,
         lastSync: 'live',
       }
     : baseChild
@@ -184,36 +184,13 @@ function DashboardPage() {
     <div className="min-h-screen bg-app-bg text-app-ink">
       <header className="border-b border-app-line bg-app-bg/80 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-6 sm:px-8 h-14 flex items-center justify-between">
-          {/* Brand */}
           <div className="flex items-baseline gap-3">
-            <span className="font-mono text-[13px] font-semibold tracking-[0.3em] uppercase relative pl-4">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-app-orange rounded-[1px]" />
-              KAIRO
-            </span>
-            <span className="hidden sm:inline mono text-app-muted">DASHBOARD</span>
-          </div>
-
-          {/* Child chip */}
-          <div className="hidden sm:flex items-center gap-2.5 px-3 py-1 bg-app-surface border border-app-line rounded-full">
-            <div className="w-6 h-6 rounded-full bg-app-orange text-white flex items-center justify-center text-[11px] font-semibold">
-              {child.name[0]}
-            </div>
-            <span className="text-[13px] font-medium">{child.name}</span>
-            <span className="mono text-app-muted" style={{ fontSize: 9 }}>{child.age}</span>
-            <span className={`w-1.5 h-1.5 rounded-full ${
-              state === 'worried' ? 'bg-app-red shadow-[0_0_8px_var(--color-app-red)]'
-                : state === 'active' ? 'bg-app-orange shadow-[0_0_8px_var(--color-app-orange)]'
-                : state === 'sleepy' ? 'bg-app-blue shadow-[0_0_8px_var(--color-app-blue)]'
-                : 'bg-app-green shadow-[0_0_8px_var(--color-app-green)]'
-            }`} />
-          </div>
-
-          {/* Right side */}
-          <div className="flex items-center gap-3">
+            <span className="text-[15px] font-semibold tracking-tight">Kairo</span>
+            <span className="text-xs text-app-muted">parent dashboard</span>
             <button
               onClick={toggleLive}
               title={bleError ?? ''}
-              className={`cursor-pointer mono flex items-center gap-1.5 px-3 py-1.5 rounded-full border transition-colors duration-150 ${
+              className={`cursor-pointer text-[11px] px-2 py-0.5 rounded-full border transition-colors duration-150 ${
                 bleStatus === 'connected'
                   ? 'bg-app-green/10 border-app-green/30 text-app-green'
                   : bleStatus === 'connecting'
@@ -222,42 +199,39 @@ function DashboardPage() {
                   ? 'bg-app-line border-app-line-2 text-app-muted/70 cursor-not-allowed'
                   : 'bg-app-surface border-app-line-2 text-app-muted hover:text-app-ink'
               }`}
-              style={{ fontSize: 10 }}
             >
-              <span className={`w-1.5 h-1.5 rounded-full ${
-                bleStatus === 'connected' ? 'bg-app-green shadow-[0_0_8px_var(--color-app-green)]' : 'bg-app-muted'
-              }`} />
               {bleStatus === 'connected'
-                ? 'LIVE'
+                ? '● live'
                 : bleStatus === 'connecting'
-                ? '...'
+                ? 'connecting…'
                 : bleStatus === 'unsupported'
-                ? 'N/A'
-                : 'MOCK'}
+                ? 'live N/A'
+                : 'mock'}
             </button>
-            <nav className="hidden md:flex items-center gap-0.5 bg-app-surface border border-app-line-2 p-0.5">
+          </div>
+          <div className="flex items-center gap-3">
+            <nav className="hidden md:flex items-center gap-1">
               {stateOrder.map((s) => (
                 <button
                   key={s}
                   onClick={() => setState(s)}
-                  className={`mono cursor-pointer px-2.5 py-1 transition-colors duration-200 ${
+                  className={`text-[13px] cursor-pointer px-3 py-1.5 rounded-full transition-colors duration-200 ${
                     s === state
                       ? 'bg-app-ink text-white'
                       : 'text-app-muted hover:text-app-ink'
                   }`}
-                  style={{ fontSize: 10 }}
                 >
                   {stateLabels[s].label}
                 </button>
               ))}
             </nav>
-            <div className="hidden sm:flex items-center gap-2 mono text-app-muted border-l border-app-line-2 pl-3" style={{ fontSize: 9 }}>
-              <span className="truncate max-w-[100px]">{authEmail}</span>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-app-muted ml-2 border-l border-app-line-2 pl-3">
+              <span className="truncate max-w-[120px]">{authEmail}</span>
               <button
                 onClick={() => logout?.()}
                 className="cursor-pointer text-app-muted hover:text-app-ink transition-colors"
               >
-                EXIT
+                Sign out
               </button>
             </div>
           </div>
@@ -274,14 +248,14 @@ function DashboardPage() {
                 <button
                   key={c.id}
                   onClick={() => setChildId(c.id)}
-                  className={`cursor-pointer text-[13px] px-3.5 py-1.5 border transition-colors duration-200 ${
+                  className={`cursor-pointer text-[13px] px-3.5 py-1.5 rounded-full border transition-colors duration-200 ${
                     active
                       ? 'bg-app-ink text-white border-app-ink'
-                      : 'border-app-line-2 text-app-muted hover:text-app-ink hover:border-app-orange/40'
+                      : 'border-app-line-2 text-app-muted hover:text-app-ink hover:border-app-ink/30'
                   }`}
                 >
                   {c.name}
-                  <span className={`ml-1.5 mono ${active ? 'text-white/60' : 'text-app-muted'}`} style={{ fontSize: 9 }}>
+                  <span className={`ml-1.5 text-xs ${active ? 'text-white/60' : 'text-app-muted'}`}>
                     {c.age}
                   </span>
                 </button>
@@ -298,90 +272,85 @@ function DashboardPage() {
         />
 
         {/* Hero */}
-        <section className="relative bg-app-surface border border-app-line p-6 sm:p-8">
-          <span className="absolute top-[-1px] left-[-1px] w-4 h-4 border-l-[1.5px] border-t-[1.5px] border-app-orange pointer-events-none" />
-          <span className="absolute bottom-[-1px] right-[-1px] w-4 h-4 border-r-[1.5px] border-b-[1.5px] border-app-orange pointer-events-none" />
-          <div className="grid sm:grid-cols-[auto_1fr] items-center gap-5 sm:gap-12">
-            <div className="flex justify-center">
-              <SparkV1
-                state={state}
-                event={event}
-                eventKey={eventKey}
-                size={140}
-                className="sm:!w-[200px] sm:!h-[200px]"
-              />
+        <section className="grid sm:grid-cols-[auto_1fr] items-center gap-5 sm:gap-12">
+          <div className="flex justify-center">
+            <SparkV1
+              state={state}
+              event={event}
+              eventKey={eventKey}
+              size={140}
+              className="sm:!w-[200px] sm:!h-[200px]"
+            />
+          </div>
+          <div className="text-center sm:text-left">
+            <div className="text-[10px] sm:text-xs uppercase tracking-[0.12em] text-app-muted">
+              {child.lastSync}
             </div>
-            <div className="text-center sm:text-left">
-              <div className="mono text-app-muted" style={{ fontSize: 9 }}>
-                {child.lastSync === 'live' ? 'LIVE · SYNCED' : child.lastSync.toUpperCase()}
-              </div>
-              <h1 className="mt-1 sm:mt-2 text-[34px] sm:text-[56px] leading-[1.05] font-medium tracking-[-0.03em]">
-                {child.name}
-                <span className="text-app-muted font-normal text-lg sm:text-3xl ml-2 sm:ml-3 align-middle">
-                  {child.age} {ageWord(child.age)}
-                </span>
-              </h1>
-              <p
-                className={`mt-2 sm:mt-3 text-base sm:text-lg ${
-                  isWorried ? 'text-app-red font-medium' : 'text-app-ink-2'
-                }`}
-              >
-                {stateLabels[state].label} · {stateLabels[state].sub}
-              </p>
+            <h1 className="mt-1 sm:mt-2 text-[34px] sm:text-[56px] leading-[1.05] font-semibold tracking-tight">
+              {child.name}
+              <span className="text-app-muted font-normal text-lg sm:text-3xl ml-2 sm:ml-3 align-middle">
+                {child.age} {ageWord(child.age)}
+              </span>
+            </h1>
+            <p
+              className={`mt-2 sm:mt-3 text-base sm:text-lg ${
+                isWorried ? 'text-app-red font-medium' : 'text-app-ink-2'
+              }`}
+            >
+              {stateLabels[state].label} · {stateLabels[state].sub}
+            </p>
 
-              {schoolModeLive && (
-                <div className="mt-3 inline-flex items-center gap-1.5 mono text-app-blue bg-app-blue/10 px-2.5 py-1" style={{ fontSize: 10 }}>
-                  <SchoolIcon width={13} height={13} />
-                  SCHOOL MODE · QUIET PULSE / 20 MIN
-                </div>
-              )}
+            {schoolModeLive && (
+              <div className="mt-3 inline-flex items-center gap-1.5 text-[12px] text-app-blue bg-app-blue/10 rounded-full px-2.5 py-1">
+                <SchoolIcon width={13} height={13} />
+                School mode · quiet pulse every 20 min
+              </div>
+            )}
 
-              <div className="mt-5 flex flex-wrap gap-2.5 justify-center sm:justify-start">
-                {(
-                  [
-                    { id: 'hug', glyph: '♥', label: 'Hug', primary: true, hap: 'HAP-03' },
-                    { id: 'cheer', glyph: '★', label: 'Cheer', primary: false, hap: 'HAP-02' },
-                    { id: 'bedtime', glyph: '☾', label: 'Bedtime', primary: false, hap: 'HAP-04' },
-                    { id: 'home', glyph: '▲', label: 'Come home', primary: false, hap: 'HAP-03' },
-                  ] as const
-                ).map((t) => (
-                  <button
-                    key={t.id}
-                    data-testid={`btn-${t.id}`}
-                    onClick={() => {
-                      if (t.id === 'hug') fireEvent('parent_touch', 1500)
-                      if (bleStatus === 'connected' && bleRef.current) {
-                        bleRef.current.sendHug().catch(console.error)
-                      }
-                      appendEvent({
-                        id: `tap-${t.id}-${Date.now()}`,
-                        kind: 'parent_touch',
-                        text: `${t.glyph} ${t.label} sent to ${child.name}`,
-                        ts: 'just now',
-                      })
-                      pushToast({
-                        emoji: t.glyph,
-                        title: `${t.label} sent to ${child.name}'s band`,
-                        sub: `soft buzz · ${t.hap}`,
-                      })
-                    }}
-                    className={`cursor-pointer text-left px-3.5 py-2.5 border transition-all duration-150 active:scale-[0.97] ${
-                      t.primary
-                        ? 'bg-app-ink text-white border-app-ink hover:border-app-orange'
-                        : 'bg-app-bg border-app-line text-app-ink hover:border-app-orange hover:-translate-y-px'
-                    }`}
-                  >
-                    <span className="flex items-center gap-2.5">
-                      <span className={`text-base leading-none ${t.primary ? 'text-app-orange/80' : 'text-app-orange'}`}>{t.glyph}</span>
-                      <span className="text-[13px] font-medium">{t.label}</span>
-                      <span className="mono border-l border-dashed border-current/30 pl-2 ml-1" style={{ fontSize: 9, opacity: 0.5 }}>{t.hap}</span>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="mt-2 mono text-app-muted text-center sm:text-left" style={{ fontSize: 9 }}>
-                ONE-TAP SIGNALS — NO CHAT, NO FREE TEXT. THE BAND BUZZES ONCE.
-              </div>
+            {/* Quick taps — preset, no free text. Spec: not messaging /
+                not social, just simple acknowledgements that buzz the band. */}
+            <div className="mt-5 flex flex-wrap gap-1.5 justify-center sm:justify-start">
+              {(
+                [
+                  { id: 'hug', emoji: '💛', label: 'Hug', primary: true, hap: 'HAP-03' },
+                  { id: 'cheer', emoji: '⭐', label: 'Cheer', primary: false, hap: 'HAP-02' },
+                  { id: 'bedtime', emoji: '🌙', label: 'Bedtime', primary: false, hap: 'HAP-04' },
+                  { id: 'home', emoji: '🏠', label: 'Come home', primary: false, hap: 'HAP-03' },
+                ] as const
+              ).map((t) => (
+                <button
+                  key={t.id}
+                  data-testid={`btn-${t.id}`}
+                  onClick={() => {
+                    if (t.id === 'hug') fireEvent('parent_touch', 1500)
+                    if (bleStatus === 'connected' && bleRef.current) {
+                      bleRef.current.sendHug().catch(console.error)
+                    }
+                    appendEvent({
+                      id: `tap-${t.id}-${Date.now()}`,
+                      kind: 'parent_touch',
+                      text: `${t.emoji} ${t.label} sent to ${child.name}`,
+                      ts: 'just now',
+                    })
+                    pushToast({
+                      emoji: t.emoji,
+                      title: `${t.label} sent to ${child.name}'s band`,
+                      sub: `soft buzz · ${t.hap}`,
+                    })
+                  }}
+                  className={`cursor-pointer text-[13px] font-medium px-3.5 py-2 rounded-full transition-all duration-150 inline-flex items-center gap-1.5 active:scale-[0.97] ${
+                    t.primary
+                      ? 'bg-app-ink text-white hover:opacity-90'
+                      : 'bg-app-surface border border-app-line-2 text-app-ink hover:border-app-ink/30 hover:bg-app-line/40'
+                  }`}
+                >
+                  <span aria-hidden>{t.emoji}</span>
+                  {t.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 text-[11px] text-app-muted text-center sm:text-left">
+              One-tap signals — no chat, no free text. The band buzzes once.
             </div>
           </div>
         </section>
@@ -408,13 +377,8 @@ function DashboardPage() {
           </section>
         )}
 
-        {/* Wellness report */}
-        <section className="mt-10">
-          <div className="flex items-baseline gap-4 mb-5 pb-3 border-b border-dashed border-app-line">
-            <span className="mono text-app-orange" style={{ fontSize: 11, letterSpacing: '0.2em' }}>01 / WELLNESS</span>
-            <span className="text-[20px] font-medium tracking-[-0.02em]">Daily report</span>
-            <span className="text-[12px] text-app-muted ml-auto">signals, not diagnosis</span>
-          </div>
+        {/* Wellness report — single source of truth for vitals trends */}
+        <section>
           <WellnessReport
             hr={child.hr}
             hrBaseline={child.hrBaseline}
@@ -440,12 +404,11 @@ function DashboardPage() {
           />
         </section>
 
-        {/* Geo */}
+        {/* Geo: zone overview (intentionally no precise GPS — wellness, not surveillance) */}
         <section>
-          <div className="flex items-baseline gap-4 mb-5 pb-3 border-b border-dashed border-app-line">
-            <span className="mono text-app-orange" style={{ fontSize: 11, letterSpacing: '0.2em' }}>02 / GEO</span>
-            <span className="text-[20px] font-medium tracking-[-0.02em]">Location</span>
-            <span className="text-[12px] text-app-muted ml-auto">geofence overview</span>
+          <div className="flex items-baseline justify-between mb-4 gap-3 flex-wrap">
+            <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">Location</h2>
+            <span className="text-xs text-app-muted">geofence overview</span>
           </div>
           <div className="space-y-4">
             <LiveMap
@@ -478,21 +441,21 @@ function DashboardPage() {
 
         {/* Schedule */}
         <section>
-          <div className="flex items-baseline gap-4 mb-5 pb-3 border-b border-dashed border-app-line">
-            <span className="mono text-app-orange" style={{ fontSize: 11, letterSpacing: '0.2em' }}>03 / SCHEDULE</span>
-            <span className="text-[20px] font-medium tracking-[-0.02em]">Band schedule</span>
-          </div>
+          <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-4">
+            Band schedule
+          </h2>
           <ScheduleCard childName={child.name} rules={rules} onChange={setRules} />
         </section>
 
         {/* Events */}
         <section>
-          <div className="flex items-baseline gap-4 mb-5 pb-3 border-b border-dashed border-app-line">
-            <span className="mono text-app-orange" style={{ fontSize: 11, letterSpacing: '0.2em' }}>04 / ACTIVITY</span>
-            <span className="text-[20px] font-medium tracking-[-0.02em]">Events</span>
-            <span className="text-[12px] text-app-muted ml-auto">today</span>
+          <div className="flex items-baseline justify-between mb-2">
+            <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">
+              Activity
+            </h2>
+            <span className="text-xs text-app-muted">today</span>
           </div>
-          <div className="bg-app-surface border border-app-line px-5">
+          <div className="rounded-2xl bg-app-surface border border-app-line px-5">
             <EventLog events={allEvents} />
           </div>
         </section>
@@ -501,19 +464,17 @@ function DashboardPage() {
         <section>
           <a
             href={`#watch/${child.id}`}
-            className="relative block border border-app-line bg-app-surface p-5 sm:p-6 hover:border-app-orange/40 transition-colors duration-150 cursor-pointer"
+            className="block rounded-2xl border border-app-line bg-app-surface p-5 sm:p-6 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
           >
-            <span className="absolute top-[-1px] left-[-1px] w-3 h-3 border-l-[1.5px] border-t-[1.5px] border-app-orange pointer-events-none" />
-            <span className="absolute bottom-[-1px] right-[-1px] w-3 h-3 border-r-[1.5px] border-b-[1.5px] border-app-orange pointer-events-none" />
             <div className="flex items-center justify-between gap-4">
               <div>
-                <div className="mono text-app-muted mb-1" style={{ fontSize: 9 }}>
-                  WHAT {child.name.toUpperCase()} SEES
+                <div className="text-[13px] uppercase tracking-[0.12em] text-app-muted mb-1">
+                  What {child.name} sees
                 </div>
                 <div className="text-base font-medium">
                   Open watch preview →
                 </div>
-                <div className="mono text-app-muted mt-1" style={{ fontSize: 9, textTransform: 'none', letterSpacing: '0.04em' }}>
+                <div className="text-xs text-app-muted mt-1">
                   Glanceable faces — points back to the kid, not the device
                 </div>
               </div>
@@ -525,10 +486,8 @@ function DashboardPage() {
         </section>
       </main>
 
-      <footer className="max-w-5xl mx-auto px-6 sm:px-8 pb-10 pt-4 mt-8 border-t border-app-line">
-        <div className="mono text-app-muted" style={{ fontSize: 9 }}>
-          KAIRO · MVP DEMO · WELLNESS SIGNALS, NOT MEDICAL DIAGNOSIS
-        </div>
+      <footer className="max-w-5xl mx-auto px-6 sm:px-8 pb-10 pt-2 text-xs text-app-muted">
+        Kairo · MVP demo · wellness signals, not medical diagnosis
       </footer>
 
       <ToastHost toasts={toasts} onDismiss={dismissToast} />

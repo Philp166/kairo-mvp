@@ -130,19 +130,7 @@ export class KairoBle {
     if (!value) return
     const text = new TextDecoder().decode(value)
     try {
-      const raw = JSON.parse(text)
-      const parsed: KairoSnapshot = {
-        ts: raw.ts ?? Date.now(),
-        hr: raw.hr ?? 0,
-        spo2: raw.spo2 ?? 0,
-        tempC: raw.tempC ?? raw.temp ?? 0,
-        steps: raw.steps ?? 0,
-        battery: raw.battery ?? 0,
-        motion: raw.motion ?? 0,
-        state: raw.state ?? 'calm',
-        worn: raw.worn ?? false,
-        event: raw.event,
-      }
+      const parsed = JSON.parse(text) as KairoSnapshot
       this.snapListener?.(parsed)
     } catch {
       // Firmware sometimes sends partial frames; drop them silently.
