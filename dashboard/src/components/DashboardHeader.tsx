@@ -3,7 +3,7 @@ import { useT } from '../lib/i18n'
 interface DashboardHeaderProps {
   lang: 'en' | 'ru'
   onLang: (lang: 'en' | 'ru') => void
-  ble: 'live' | 'mock'
+  ble: 'live' | 'idle'
   onToggleBle: () => void
   childName: string
   childInitial: string
@@ -47,7 +47,7 @@ export function DashboardHeader({
         >
           <span className="ble-dot" />
           <span className="mono">
-            {ble === 'live' ? t('ble.live') : t('ble.mock')}
+            {ble === 'live' ? t('ble.live') : 'PAIR'}
           </span>
         </button>
 

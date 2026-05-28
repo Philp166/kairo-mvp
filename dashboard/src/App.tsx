@@ -1,22 +1,52 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { LangProvider, useT, type Lang } from './lib/i18n'
+import { api, type Overview, type ApiEvent, type Zone, type Snapshot } from './lib/api'
 import { DashboardHeader } from './components/DashboardHeader'
 import { HeroPanel } from './components/HeroPanel'
 import { KairoToast, type ToastData } from './components/KairoToast'
 import { SectionHead } from './components/SectionHead'
 import { VitalChipBank, type VitalChipProps } from './components/VitalChip'
-import MoodScrub, { DAY_MOODS } from './components/MoodScrub'
+import MoodScrub from './components/MoodScrub'
 import HrTrendChart from './components/HrTrendChart'
 import { StatTile, HrvGauge } from './components/KairoStatTile'
-import Carousel from './components/Carousel'
 import ScheduleArc from './components/ScheduleArc'
 import LocationRadar from './components/LocationRadar'
 import ActivityTape from './components/ActivityTape'
 import { WatchPage } from './components/WatchPage'
 import { BriefPage } from './components/BriefPage'
-import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
 import type { SparkState } from './components/Spark'
+
+/* ── Helpers ──────────────────────────────────────────── */
+
+const CHILD_ID = 'masha' // single-child MVP, auth later
+
+function timeAgo(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const min = Math.floor(diff / 60000)
+  if (min < 1) return 'just now'
+  if (min < 60) return `${min} min ago`
+  const h = Math.floor(min / 60)
+  if (h < 24) return `${h} h ago`
+  return `${Math.floor(h / 24)} d ago`
+}
+
+/** Convert API snapshot series → HR number array for chart (one per half-hour slot) */
+function seriesToHr(snaps: Snapshot[]): number[] {
+  if (!snaps.length) return []
+  const slots: number[] = new Array(48).fill(0)
+  const counts: number[] = new Array(48).fill(0)
+  for (const s of snaps) {
+    if (s.hr == null) continue
+    const d = new Date(s.ts)
+    const slot = d.getHours() * 2 + (d.getMinutes() >= 30 ? 1 : 0)
+    slots[slot] += s.hr
+    counts[slot]++
+  }
+  return slots.map((sum, i) => (counts[i] ? Math.round(sum / counts[i]) : 0))
+}
+
+/* ── Router ───────────────────────────────────────────── */
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => window.location.hash)
@@ -42,26 +72,75 @@ function App() {
   )
 }
 
+/* ── Empty state card ─────────────────────────────────── */
+
+function EmptyCard({ title, sub }: { title: string; sub: string }) {
+  return (
+    <div className="panel-card" style={{ padding: '32px 24px', textAlign: 'center', opacity: 0.6 }}>
+      <div className="mono dim" style={{ fontSize: 11, letterSpacing: '0.15em', marginBottom: 8 }}>
+        {title}
+      </div>
+      <div className="mono" style={{ fontSize: 13, color: 'var(--ink-2)' }}>{sub}</div>
+    </div>
+  )
+}
+
+/* ── Main dashboard ───────────────────────────────────── */
+
 function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void }) {
   const { t } = useT()
-  const child = mockChildren[0]
 
+  /* ── API state ── */
+  const [overview, setOverview] = useState<Overview | null>(null)
+  const [events, setEvents] = useState<ApiEvent[]>([])
+  const [zones, setZones] = useState<Zone[]>([])
+  const [series, setSeries] = useState<Snapshot[]>([])
+  const [childName, setChildName] = useState('—')
+  const [apiOk, setApiOk] = useState<boolean | null>(null) // null = loading
+
+  /* ── BLE state ── */
   const [bleStatus, setBleStatus] = useState<KairoBleStatus>('idle')
   const [liveSnap, setLiveSnap] = useState<KairoSnapshot | null>(null)
   const bleRef = useRef<KairoBle | null>(null)
 
-  const [sparkState, setSparkState] = useState<SparkState>(child.state)
+  /* ── UI state ── */
+  const [sparkState, setSparkState] = useState<SparkState>('calm')
   const [scrubHour, setScrubHour] = useState(23)
   const [toast, setToast] = useState<ToastData | null>(null)
 
-  useEffect(() => {
-    if (scrubHour >= 23) {
-      setSparkState(liveSnap ? (liveSnap.state as SparkState) : child.state)
-    } else {
-      setSparkState(DAY_MOODS[scrubHour].state)
+  /* ── Fetch data from API ── */
+  const fetchAll = useCallback(async () => {
+    try {
+      const [ov, ev, zn, sr, ch] = await Promise.all([
+        api.overview(CHILD_ID),
+        api.events(CHILD_ID),
+        api.zones(CHILD_ID),
+        api.series(CHILD_ID, 24),
+        api.child(CHILD_ID),
+      ])
+      setOverview(ov)
+      setEvents(ev)
+      setZones(zn)
+      setSeries(sr)
+      setChildName(ch.name)
+      setApiOk(true)
+      if (ov.snapshot?.state) setSparkState(ov.snapshot.state as SparkState)
+    } catch (e) {
+      console.error('[kairo] API fetch failed:', e)
+      setApiOk(false)
     }
-  }, [scrubHour, liveSnap, child.state])
+  }, [])
 
+  useEffect(() => { fetchAll() }, [fetchAll])
+
+  // Refresh data every 30s
+  useEffect(() => {
+    if (!apiOk) return
+    const id = setInterval(fetchAll, 30_000)
+    return () => clearInterval(id)
+  }, [apiOk, fetchAll])
+
+  /* ── BLE ── */
   async function toggleBle() {
     if (bleStatus === 'connected' || bleStatus === 'connecting') {
       await bleRef.current?.disconnect()
@@ -73,6 +152,16 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       b.onSnapshot((s) => {
         setLiveSnap(s)
         setSparkState(s.state as SparkState)
+        // Post snapshot to backend
+        api.postSnapshot({
+          childId: CHILD_ID,
+          hr: s.hr || undefined,
+          spo2: s.spo2 || undefined,
+          tempC: s.tempC || undefined,
+          steps: s.steps || undefined,
+          battery: s.battery || undefined,
+          state: s.state,
+        }).catch(() => {}) // fire-and-forget
       })
       b.onStatus((status) => setBleStatus(status))
       bleRef.current = b
@@ -82,21 +171,47 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
     } catch { /* status listener captured error */ }
   }
 
-  const merged = liveSnap
-    ? {
-        hr: liveSnap.hr ?? child.hr,
-        spo2: liveSnap.spo2 ?? child.spo2,
-        tempC: liveSnap.tempC ?? child.tempC,
-        steps: liveSnap.steps ?? child.steps,
-        battery: liveSnap.battery ?? child.battery,
-      }
-    : child
+  /* ── Derived data ── */
+  const snap = overview?.snapshot
+  const hasData = (overview?.snapshotCount ?? 0) > 0
+
+  // Current vitals: live BLE > latest API snapshot > null
+  const hr = liveSnap?.hr ?? snap?.hr ?? null
+  const spo2 = liveSnap?.spo2 ?? snap?.spo2 ?? null
+  const tempC = liveSnap?.tempC ?? snap?.temp_c ?? null
+  const steps = liveSnap?.steps ?? snap?.steps ?? null
+  const battery = liveSnap?.battery ?? snap?.battery ?? null
+
+  const lastSync = snap?.ts ? timeAgo(snap.ts) : '—'
+  const tempDelta = tempC != null ? tempC - 36.6 : 0
+  const tempStr = tempC != null ? `${tempDelta >= 0 ? '+' : ''}${tempDelta.toFixed(1)}` : '—'
+
+  const heroVitals = {
+    hr:      { value: hr ?? '—', color: 'var(--accent)' },
+    spo2:    { value: spo2 ?? '—', color: 'var(--ok)' },
+    temp:    { value: tempStr, color: tempDelta > 0.3 ? 'var(--alert)' : 'var(--ok)' },
+    battery: { value: battery ?? '—', color: battery != null && battery < 20 ? 'var(--alert)' : 'var(--ok)' },
+  }
+
+  const hrSeries = seriesToHr(series)
 
   const handleTouch = useCallback(
     (kind: string) => {
       if (bleStatus === 'connected' && bleRef.current) {
         bleRef.current.sendHug().catch(() => {})
       }
+      // Log event to backend
+      const textMap: Record<string, string> = {
+        hug: `You hugged ${childName} through the band`,
+        cheer: `You cheered ${childName} on`,
+        bedtime: `Bedtime signal sent to ${childName}`,
+      }
+      api.postEvent({
+        childId: CHILD_ID,
+        kind: kind === 'hug' ? 'parent_touch' : kind,
+        text: textMap[kind] ?? `Touch: ${kind}`,
+      }).then(() => fetchAll()).catch(() => {})
+
       const map: Record<string, ToastData> = {
         hug:     { glyph: '♥', title: t('toast.hug.title'),   sub: t('toast.hug.sub'),   hap: 'HAP-03' },
         cheer:   { glyph: '★', title: t('toast.cheer.title'), sub: t('toast.cheer.sub'), hap: 'HAP-02' },
@@ -104,132 +219,198 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       }
       setToast(map[kind] ?? map.hug)
     },
-    [bleStatus, t],
+    [bleStatus, t, childName, fetchAll],
   )
 
-  const tempDelta = merged.tempC - child.tempBaseline
-  const tempStr = `${tempDelta >= 0 ? '+' : ''}${tempDelta.toFixed(1)}`
-
-  const heroVitals = {
-    hr:      { value: merged.hr, color: 'var(--accent)' },
-    spo2:    { value: merged.spo2, color: 'var(--ok)' },
-    temp:    { value: tempStr, color: tempDelta > 0.3 ? 'var(--alert)' : 'var(--ok)' },
-    battery: { value: merged.battery, color: merged.battery < 20 ? 'var(--alert)' : 'var(--ok)' },
-  }
-
-  const scrubMoment = scrubHour < 23 ? DAY_MOODS[scrubHour] : undefined
-
+  /* ── Vitals chips — only show data if we have it ── */
   const vitals: VitalChipProps[] = [
     {
       slot: 'HR',
       label: t('v.hr.label'),
-      value: merged.hr,
-      unit: 'BPM',
-      delta: t('v.hr.delta') + ` ${merged.hr > child.hrBaseline ? '+' : ''}${merged.hr - child.hrBaseline}`,
-      status: merged.hr > 120 ? 'alert' : merged.hr > 100 ? 'warn' : 'norm',
+      value: hr ?? '—',
+      unit: hr != null ? 'BPM' : '',
+      delta: hasData ? t('v.hr.delta') : 'NO DATA YET',
+      status: hr != null ? (hr > 120 ? 'alert' : hr > 100 ? 'warn' : 'norm') : 'norm',
       color: 'var(--accent)',
-      data: child.hrSeries,
+      data: hrSeries.length ? hrSeries : [],
     },
     {
       slot: 'SPO2',
       label: t('v.spo2.label'),
-      value: merged.spo2,
-      unit: '%',
-      delta: t('v.spo2.delta'),
-      status: merged.spo2 < 94 ? 'alert' : merged.spo2 < 96 ? 'warn' : 'norm',
+      value: spo2 ?? '—',
+      unit: spo2 != null ? '%' : '',
+      delta: hasData ? t('v.spo2.delta') : 'NO DATA YET',
+      status: spo2 != null ? (spo2 < 94 ? 'alert' : spo2 < 96 ? 'warn' : 'norm') : 'norm',
       color: 'var(--ok)',
-      data: child.spo2NightSeries,
+      data: [],
     },
     {
       slot: 'TEMP',
       label: t('v.temp.label'),
-      value: merged.tempC?.toFixed(1) ?? '—',
-      unit: '°C',
-      delta: t('v.temp.delta'),
-      status: Math.abs(tempDelta) > 0.5 ? 'warn' : 'norm',
+      value: tempC?.toFixed(1) ?? '—',
+      unit: tempC != null ? '°C' : '',
+      delta: hasData ? t('v.temp.delta') : 'NO DATA YET',
+      status: tempC != null ? (Math.abs(tempDelta) > 0.5 ? 'warn' : 'norm') : 'norm',
       color: 'var(--lavender)',
-      data: child.tempDeltaSeries.map((d) => child.tempBaseline + d),
+      data: [],
     },
     {
       slot: 'STEP',
       label: t('v.step.label'),
-      value: merged.steps.toLocaleString(),
+      value: steps != null ? steps.toLocaleString() : '—',
       unit: '',
-      delta: t('v.step.delta'),
-      status: merged.steps >= child.stepsGoal ? 'norm' : 'warn',
+      delta: hasData ? t('v.step.delta') : 'NO DATA YET',
+      status: 'norm',
       color: 'var(--ink-2)',
-      data: child.stepsDailySeries,
+      data: [],
     },
   ]
+
+  /* ── Map API zones → LocationRadar props ── */
+  const radarZones = zones.map((z) => ({
+    id: z.id,
+    name: z.name,
+    kind: z.kind,
+    active: z.active,
+    lastEvent: z.last_event_type && z.last_event_ts
+      ? { type: z.last_event_type, ts: timeAgo(z.last_event_ts) }
+      : undefined,
+  }))
+
+  /* ── Map API events → ActivityTape props ── */
+  const tapeEvents = events.map((e) => ({
+    id: String(e.id),
+    kind: e.kind,
+    text: e.text,
+    ts: timeAgo(e.ts),
+  }))
+
+  /* ── Render ── */
+
+  // API still loading
+  if (apiOk === null) {
+    return (
+      <div className="dashboard-root">
+        <div className="dash-main" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
+          <div className="mono dim" style={{ fontSize: 13, letterSpacing: '0.15em' }}>CONNECTING TO KAIRO...</div>
+        </div>
+      </div>
+    )
+  }
+
+  // API unreachable
+  if (apiOk === false) {
+    return (
+      <div className="dashboard-root">
+        <div className="dash-main" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '60vh', gap: 16 }}>
+          <div className="mono" style={{ fontSize: 15, color: 'var(--alert)', letterSpacing: '0.12em' }}>BACKEND OFFLINE</div>
+          <div className="mono dim" style={{ fontSize: 12, maxWidth: 400, textAlign: 'center', lineHeight: 1.6 }}>
+            Server not reachable. Start it with: cd server && npm run dev
+          </div>
+          <button className="cartridge-btn" onClick={fetchAll} style={{ marginTop: 8 }}>
+            RETRY
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  const sleepScore = overview?.lastSleep?.score ?? null
+  const sleepSub = overview?.lastSleep
+    ? `${overview.lastSleep.total_min ? Math.floor(overview.lastSleep.total_min / 60) + 'h ' + (overview.lastSleep.total_min % 60) + 'm' : '—'} · ${overview.lastSleep.awakenings} wake${overview.lastSleep.awakenings !== 1 ? 's' : ''}`
+    : 'NO SLEEP DATA YET'
 
   return (
     <div className="dashboard-root">
       <DashboardHeader
         lang={lang}
         onLang={onLang}
-        ble={bleStatus === 'connected' ? 'live' : 'mock'}
+        ble={bleStatus === 'connected' ? 'live' : hasData ? 'idle' : 'idle'}
         onToggleBle={toggleBle}
-        childName={child.name}
-        childInitial={child.name[0]}
+        childName={childName}
+        childInitial={childName[0] ?? '?'}
       />
 
       <main className="dash-main">
         <HeroPanel
           sparkState={sparkState}
           scrubHour={scrubHour}
-          scrubMoment={scrubMoment}
+          scrubMoment={undefined}
           vitals={heroVitals}
           onTouch={handleTouch}
         />
 
         <SectionHead num="01" titleKey="sec.vitals.title" subKey="sec.vitals.sub" />
-        <VitalChipBank vitals={vitals} scrubHour={scrubHour < 23 ? scrubHour : null} />
+        {hasData ? (
+          <VitalChipBank vitals={vitals} scrubHour={null} />
+        ) : (
+          <>
+            <VitalChipBank vitals={vitals} scrubHour={null} />
+            <div className="mono dim" style={{ textAlign: 'center', fontSize: 11, marginTop: -16, letterSpacing: '0.12em' }}>
+              PAIR BAND TO START COLLECTING · NO READINGS YET
+            </div>
+          </>
+        )}
 
         <SectionHead num="02" titleKey="sec.scrub.title" subKey="sec.scrub.sub" />
-        <MoodScrub scrubHour={scrubHour} onScrub={setScrubHour} />
+        {hasData ? (
+          <MoodScrub scrubHour={scrubHour} onScrub={setScrubHour} />
+        ) : (
+          <EmptyCard title="MOOD TIMELINE" sub="Needs 24h of band data to reconstruct the day" />
+        )}
 
         <SectionHead num="03" titleKey="sec.trends.title" subKey="sec.trends.sub" />
-        <HrTrendChart data={child.hrSeries} scrubHour={scrubHour < 23 ? scrubHour : null} />
+        {hrSeries.some(v => v > 0) ? (
+          <HrTrendChart data={hrSeries} scrubHour={scrubHour < 23 ? scrubHour : null} />
+        ) : (
+          <EmptyCard title="HR 24H CHART" sub="Will populate as heart rate data arrives from the band" />
+        )}
 
         <div className="stat-row">
           <StatTile
             slot="SLEEP"
             label={t('stat.sleep.label')}
-            value={child.sleepScoreSeries[child.sleepScoreSeries.length - 1] ?? 87}
-            unit="/100"
-            sub={t('stat.sleep.sub')}
+            value={sleepScore ?? '—'}
+            unit={sleepScore != null ? '/100' : ''}
+            sub={sleepSub}
             color="var(--lavender)"
           />
           <StatTile
             slot="HRV"
             label={t('stat.hrv.label')}
-            value={child.hrvSeries[child.hrvSeries.length - 1] ?? 42}
-            unit="ms"
-            sub={t('stat.hrv.sub')}
+            value={overview?.today?.hrv_rmssd != null ? Math.round(overview.today.hrv_rmssd) : '—'}
+            unit={overview?.today?.hrv_rmssd != null ? 'ms' : ''}
+            sub={overview?.today?.hrv_rmssd != null ? 'RMSSD · LAST 5 MIN · RESTING BAND' : 'NEEDS RESTING HR DATA'}
             color="var(--accent)"
           >
-            <HrvGauge value={child.hrvSeries[child.hrvSeries.length - 1] ?? 42} />
+            {overview?.today?.hrv_rmssd != null && (
+              <HrvGauge value={Math.round(overview.today.hrv_rmssd)} />
+            )}
           </StatTile>
         </div>
 
         <SectionHead num="04" titleKey="sec.rhythm.title" subKey="sec.rhythm.sub" />
-        <Carousel
-          items={[
-            <ScheduleArc key="arc" bedStart={21.5} bedEnd={7} schoolStart={8.5} schoolEnd={14} />,
+        <div className="rhythm-row">
+          <ScheduleArc />
+          {radarZones.length > 0 ? (
             <LocationRadar
-              key="radar"
-              zones={child.zones}
-              currentPlace={child.location.place}
-              currentDuration={child.location.duration}
-              childName={child.name}
-              lastSync={child.lastSync}
-            />,
-          ]}
-          label="PANELS"
-        />
+              zones={radarZones}
+              currentPlace={'—'}
+              currentDuration={snap?.ts ? timeAgo(snap.ts) : '—'}
+              childName={childName}
+              lastSync={lastSync}
+            />
+          ) : (
+            <EmptyCard title="LOCATION RADAR" sub="Add geofence zones to see the radar" />
+          )}
+        </div>
 
         <SectionHead num="05" titleKey="sec.tape.title" subKey="sec.tape.sub" />
-        <ActivityTape events={child.events} />
+        {tapeEvents.length > 0 ? (
+          <ActivityTape events={tapeEvents} />
+        ) : (
+          <EmptyCard title="ACTIVITY TAPE" sub="Events will appear here as the band collects data" />
+        )}
 
         <footer className="dash-footer mono">
           {t('footer.tag')}

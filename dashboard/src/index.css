@@ -56,7 +56,8 @@ body {
 .dashboard-root { min-height: 100vh; background: var(--bg); color: var(--ink); display: flex; flex-direction: column; }
 .dash-main { max-width: 1080px; width: 100%; margin: 0 auto; padding: 24px 32px 48px; display: flex; flex-direction: column; gap: 32px; }
 .stat-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-@media (max-width: 640px) { .stat-row { grid-template-columns: 1fr; } }
+.rhythm-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 640px) { .stat-row, .rhythm-row { grid-template-columns: 1fr; } }
 .tabular { font-variant-numeric: tabular-nums; }
 .mono {
   font-family: 'JetBrains Mono', ui-monospace, monospace;
