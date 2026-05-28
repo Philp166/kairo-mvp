@@ -12,6 +12,8 @@ import { BriefPage } from './components/BriefPage'
 import { mockChildren } from './mock'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
 import { SchoolIcon } from './components/icons'
+import { useLogout, useAuthEmail } from './components/AuthGate'
+import { OnboardingBanner } from './components/OnboardingBanner'
 
 function useHashRoute() {
   const [hash, setHash] = useState(() => (typeof window !== 'undefined' ? window.location.hash : ''))
@@ -46,6 +48,8 @@ function App() {
 }
 
 function DashboardPage() {
+  const logout = useLogout()
+  const authEmail = useAuthEmail()
   const [childId, setChildId] = useState(mockChildren[0].id)
   const baseChild = mockChildren.find((c) => c.id === childId) ?? mockChildren[0]
   const [state, setState] = useState<SparkState>(baseChild.state)
@@ -205,21 +209,32 @@ function DashboardPage() {
                 : 'mock'}
             </button>
           </div>
-          <nav className="hidden md:flex items-center gap-1">
-            {stateOrder.map((s) => (
+          <div className="flex items-center gap-3">
+            <nav className="hidden md:flex items-center gap-1">
+              {stateOrder.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setState(s)}
+                  className={`text-[13px] cursor-pointer px-3 py-1.5 rounded-full transition-colors duration-200 ${
+                    s === state
+                      ? 'bg-app-ink text-white'
+                      : 'text-app-muted hover:text-app-ink'
+                  }`}
+                >
+                  {stateLabels[s].label}
+                </button>
+              ))}
+            </nav>
+            <div className="hidden sm:flex items-center gap-2 text-xs text-app-muted ml-2 border-l border-app-line-2 pl-3">
+              <span className="truncate max-w-[120px]">{authEmail}</span>
               <button
-                key={s}
-                onClick={() => setState(s)}
-                className={`text-[13px] cursor-pointer px-3 py-1.5 rounded-full transition-colors duration-200 ${
-                  s === state
-                    ? 'bg-app-ink text-white'
-                    : 'text-app-muted hover:text-app-ink'
-                }`}
+                onClick={() => logout?.()}
+                className="cursor-pointer text-app-muted hover:text-app-ink transition-colors"
               >
-                {stateLabels[s].label}
+                Sign out
               </button>
-            ))}
-          </nav>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -248,6 +263,13 @@ function DashboardPage() {
             })}
           </nav>
         )}
+
+        {/* BLE onboarding */}
+        <OnboardingBanner
+          bleStatus={bleStatus}
+          onConnect={toggleLive}
+          lastDataAgo={liveSnap ? 'just now' : undefined}
+        />
 
         {/* Hero */}
         <section className="grid sm:grid-cols-[auto_1fr] items-center gap-5 sm:gap-12">

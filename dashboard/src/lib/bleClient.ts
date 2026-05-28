@@ -11,7 +11,7 @@ export interface KairoSnapshot {
   ts: number
   hr: number
   spo2: number
-  temp: number
+  tempC: number
   steps: number
   battery: number
   motion: number
