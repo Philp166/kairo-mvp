@@ -123,7 +123,7 @@ export function WellnessReport(p: WellnessReportProps) {
   return (
     <div>
       {/* ── Hero strip: band freshness ──────────────────────────────── */}
-      <div className="flex flex-wrap items-center gap-3 mb-5 rounded-2xl bg-app-surface border border-app-line px-5 py-3.5">
+      <div className="flex flex-wrap items-center gap-3 mb-5 bg-app-surface border border-app-line px-5 py-3.5">
         <div className="flex items-center gap-2 min-w-0">
           <span className={batteryColor}>
             <BatteryIcon width={14} height={14} />
@@ -148,21 +148,20 @@ export function WellnessReport(p: WellnessReportProps) {
         </div>
       </div>
 
-      {/* ── Title row + range tabs ──────────────────────────────────── */}
+      {/* ── Range tabs ──────────────────────────────────────────────── */}
       <div className="flex items-baseline justify-between mb-2 gap-3 flex-wrap">
-        <h2 className="text-[13px] uppercase tracking-[0.12em] text-app-muted">
-          Wellness report
-        </h2>
-        <div className="inline-flex rounded-full bg-app-line/70 p-0.5">
+        <span className="mono text-app-muted" style={{ fontSize: 9 }}>RANGE</span>
+        <div className="inline-flex bg-app-surface border border-app-line-2 p-0.5">
           {ranges.map((r) => (
             <button
               key={r.id}
               onClick={() => setRange(r.id)}
-              className={`text-xs cursor-pointer px-3 py-1 rounded-full transition-colors duration-200 ${
+              className={`mono cursor-pointer px-3 py-1 transition-colors duration-200 ${
                 r.id === range
-                  ? 'bg-app-surface text-app-ink shadow-sm'
+                  ? 'bg-app-ink text-white'
                   : 'text-app-muted hover:text-app-ink'
               }`}
+              style={{ fontSize: 10 }}
             >
               {r.label}
             </button>
@@ -184,7 +183,7 @@ export function WellnessReport(p: WellnessReportProps) {
           value={range === '1d' ? `${p.hr}` : `${Math.round(hrStats.avg)}`}
           unit="bpm"
           sub={`${Math.round(hrStats.min)}–${Math.round(hrStats.max)} · usually around ${p.hrBaseline}`}
-          chart={<Sparkline data={hrWindow} color="#FF3B30" width={88} height={26} />}
+          chart={<Sparkline data={hrWindow} color="#D85A30" width={88} height={26} />}
         />
 
         <Card
@@ -196,7 +195,7 @@ export function WellnessReport(p: WellnessReportProps) {
           sub={`RMSSD · ${Math.round(hrvStats.min)}–${Math.round(hrvStats.max)} ${
             range === '1d' ? 'last night' : 'over period'
           }`}
-          chart={<Sparkline data={hrvWin} color="#007AFF" width={88} height={26} />}
+          chart={<Sparkline data={hrvWin} color="#9B8EC4" width={88} height={26} />}
         />
 
         <Card
@@ -208,24 +207,24 @@ export function WellnessReport(p: WellnessReportProps) {
           sub={`min ${spo2Stats.min.toFixed(1)} · ${
             spo2Low ? 'lower than usual — share with paediatrician' : 'within typical range'
           }`}
-          chart={<Sparkline data={spo2Win} color="#34C759" width={88} height={26} />}
+          chart={<Sparkline data={spo2Win} color="#5A9A6B" width={88} height={26} />}
         />
 
         <Card
           title="Skin temp"
           icon={<ThermometerIcon width={14} height={14} />}
           accent={tempBreach ? 'text-app-orange' : 'text-app-ink-2'}
-          value={range === '1d' ? p.tempC.toFixed(1) : fmtDelta(tempWin[tempWin.length - 1] ?? 0)}
+          value={range === '1d' ? (p.tempC ?? 0).toFixed(1) : fmtDelta(tempWin[tempWin.length - 1] ?? 0)}
           unit={range === '1d' ? '°C' : '°C Δ'}
           sub={
             tempBreach
               ? `swing of ${tempMaxAbs.toFixed(2)}° — wider than usual, keep an eye out`
-              : `usually ${p.tempBaseline.toFixed(1)}° · steady`
+              : `usually ${(p.tempBaseline ?? 0).toFixed(1)}° · steady`
           }
           chart={
             <Sparkline
               data={tempWin}
-              color={tempBreach ? '#FF9500' : '#86868b'}
+              color={tempBreach ? '#D85A30' : '#8C8279'}
               width={88}
               height={26}
             />
@@ -245,7 +244,7 @@ export function WellnessReport(p: WellnessReportProps) {
           sub={`mostly ${sleepWord(Math.round(sleepStats.avg))} · sometimes ${sleepWord(
             Math.round(sleepStats.min),
           )}`}
-          chart={<Sparkline data={sleepWin} color="#5AC8FA" width={88} height={26} />}
+          chart={<Sparkline data={sleepWin} color="#9B8EC4" width={88} height={26} />}
         />
 
         <Card
@@ -265,18 +264,18 @@ export function WellnessReport(p: WellnessReportProps) {
                 : `goal ${p.stepsGoal.toLocaleString('en')} · plenty of day left`
               : `goal ${p.stepsGoal.toLocaleString('en')} · usually ${Math.round((stepsAvg / p.stepsGoal) * 100)}% there`
           }
-          chart={<Sparkline data={stepsWin} color="#34C759" width={88} height={26} fill />}
+          chart={<Sparkline data={stepsWin} color="#5A9A6B" width={88} height={26} fill />}
         />
       </div>
 
       {p.briefHref && (
         <a
           href={p.briefHref}
-          className="group mt-4 flex items-center justify-between gap-4 rounded-2xl border border-app-line bg-app-surface p-4 sm:p-5 hover:border-app-ink/20 transition-colors duration-150 cursor-pointer"
+          className="relative group mt-4 flex items-center justify-between gap-4 border border-app-line bg-app-surface p-4 sm:p-5 hover:border-app-orange/40 transition-colors duration-150 cursor-pointer"
         >
           <div className="min-w-0">
-            <div className="text-[11px] uppercase tracking-[0.12em] text-app-muted mb-0.5">
-              Paediatrician brief
+            <div className="mono text-app-muted mb-0.5" style={{ fontSize: 9 }}>
+              PAEDIATRICIAN BRIEF
             </div>
             <div className="text-[15px] font-medium leading-tight">
               Print the longitudinal record
@@ -289,7 +288,7 @@ export function WellnessReport(p: WellnessReportProps) {
               timeline, conversation prompts
             </div>
           </div>
-          <span className="hidden sm:flex size-10 rounded-xl bg-app-line items-center justify-center text-app-ink shrink-0">
+          <span className="hidden sm:flex size-10 bg-app-line items-center justify-center text-app-ink shrink-0">
             <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round">
               <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
               <polyline points="14 2 14 8 20 8" />
@@ -322,20 +321,21 @@ interface CardProps {
 
 function Card({ title, icon, accent, value, unit, sub, chart }: CardProps) {
   return (
-    <div className="rounded-2xl bg-app-surface border border-app-line p-4 sm:p-5">
-      {/* Mobile: horizontal Apple-Health row (icon · text · chart) */}
-      <div className="flex items-center gap-3 lg:hidden">
+    <div className="relative bg-app-surface border border-app-line p-4 sm:p-5 overflow-hidden">
+      <span className="absolute inset-0 bg-gradient-to-b from-app-orange/[0.04] to-transparent pointer-events-none" />
+      {/* Mobile: horizontal row */}
+      <div className="relative flex items-center gap-3 lg:hidden">
         <span
-          className={`shrink-0 size-9 rounded-xl bg-app-line/70 flex items-center justify-center ${accent}`}
+          className={`shrink-0 size-9 bg-app-line/70 flex items-center justify-center ${accent}`}
         >
           {icon}
         </span>
         <div className="flex-1 min-w-0">
-          <div className="text-[10px] uppercase tracking-[0.12em] text-app-muted">
-            {title}
+          <div className="mono text-app-muted" style={{ fontSize: 9 }}>
+            {title.toUpperCase()}
           </div>
           <div className="mt-0.5 flex items-baseline gap-1.5 tabular">
-            <span className="text-[22px] leading-none font-semibold tracking-tight">
+            <span className="font-mono text-[22px] leading-none font-medium tracking-tight">
               {value}
             </span>
             <span className="text-xs text-app-muted">{unit}</span>
@@ -345,19 +345,19 @@ function Card({ title, icon, accent, value, unit, sub, chart }: CardProps) {
         {chart && <div className="shrink-0 opacity-80">{chart}</div>}
       </div>
 
-      {/* Desktop: original stacked layout */}
-      <div className="hidden lg:block">
+      {/* Desktop: stacked layout */}
+      <div className="relative hidden lg:block">
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5">
             <span className={accent}>{icon}</span>
-            <span className="text-[11px] uppercase tracking-[0.1em] text-app-muted">
-              {title}
+            <span className="mono text-app-muted" style={{ fontSize: 9 }}>
+              {title.toUpperCase()}
             </span>
           </div>
           <div className="opacity-80">{chart}</div>
         </div>
         <div className="mt-2 flex items-baseline gap-1.5 tabular">
-          <span className="text-[26px] leading-none font-semibold tracking-tight">{value}</span>
+          <span className="font-mono text-[26px] leading-none font-medium tracking-[-0.03em]">{value}</span>
           <span className="text-xs text-app-muted">{unit}</span>
         </div>
         <div className="mt-1 text-[11px] text-app-muted truncate">{sub}</div>

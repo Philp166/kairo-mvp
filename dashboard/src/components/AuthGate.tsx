@@ -48,15 +48,18 @@ function LoginScreen({ onLogin }: { onLogin: (email: string) => void }) {
   return (
     <div className="min-h-screen bg-app-bg flex items-center justify-center px-4">
       <form
-        className="w-full max-w-xs space-y-5"
+        className="w-full max-w-xs space-y-6"
         onSubmit={(e) => {
           e.preventDefault()
           if (email && password) onLogin(email)
         }}
       >
-        <div className="text-center space-y-1">
-          <div className="text-[28px] font-semibold tracking-tight text-app-ink">Kairo</div>
-          <div className="text-xs text-app-muted">parent dashboard</div>
+        <div className="text-center space-y-2">
+          <div className="font-mono text-[13px] font-semibold tracking-[0.3em] uppercase relative inline-block pl-4">
+            <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-1.5 bg-app-orange rounded-[1px]" />
+            KAIRO
+          </div>
+          <div className="mono text-app-muted">PARENT DASHBOARD</div>
         </div>
 
         <div className="space-y-3">
@@ -66,7 +69,7 @@ function LoginScreen({ onLogin }: { onLogin: (email: string) => void }) {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-app-line-2 bg-app-surface text-sm text-app-ink placeholder:text-app-muted focus:outline-none focus:border-app-ink/30 transition-colors"
+            className="w-full px-3.5 py-2.5 border border-app-line-2 bg-app-surface text-sm text-app-ink placeholder:text-app-muted focus:outline-none focus:border-app-orange/40 transition-colors"
           />
           <input
             type="password"
@@ -74,19 +77,19 @@ function LoginScreen({ onLogin }: { onLogin: (email: string) => void }) {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="w-full px-3.5 py-2.5 rounded-xl border border-app-line-2 bg-app-surface text-sm text-app-ink placeholder:text-app-muted focus:outline-none focus:border-app-ink/30 transition-colors"
+            className="w-full px-3.5 py-2.5 border border-app-line-2 bg-app-surface text-sm text-app-ink placeholder:text-app-muted focus:outline-none focus:border-app-orange/40 transition-colors"
           />
         </div>
 
         <button
           type="submit"
-          className="w-full py-2.5 rounded-xl bg-app-ink text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
+          className="w-full py-2.5 bg-app-ink text-white text-sm font-medium hover:opacity-90 transition-opacity cursor-pointer"
         >
           Sign in
         </button>
 
-        <p className="text-center text-[11px] text-app-muted">
-          Demo mode — any credentials work
+        <p className="text-center mono text-app-muted" style={{ fontSize: 9 }}>
+          DEMO MODE — ANY CREDENTIALS
         </p>
       </form>
     </div>
