@@ -107,6 +107,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
   const [sparkState, setSparkState] = useState<SparkState>('calm')
   const [scrubHour, setScrubHour] = useState(23)
   const [toast, setToast] = useState<ToastData | null>(null)
+  const [bleEvents, setBleEvents] = useState<{ id: string; kind: string; text: string; ts: string }[]>([])
 
   /* ── Fetch data from API ── */
   const fetchAll = useCallback(async () => {
@@ -152,6 +153,25 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       b.onSnapshot((s) => {
         setLiveSnap(s)
         setSparkState(s.state as SparkState)
+        // Handle BLE events (sos, goal_reached, etc.)
+        if (s.event) {
+          const eventText: Record<string, string> = {
+            sos: 'SOS triggered on band',
+            sos_clear: 'SOS cleared',
+            goal_reached: 'Step goal reached!',
+          }
+          const eventToast: Record<string, ToastData> = {
+            sos: { glyph: '!', title: 'SOS ALERT', sub: 'Child activated SOS on band', hap: 'HAP-01' },
+            goal_reached: { glyph: '★', title: 'GOAL REACHED', sub: 'Step goal completed', hap: 'HAP-02' },
+          }
+          setBleEvents(prev => [{
+            id: `ble-${Date.now()}`,
+            kind: s.event!,
+            text: eventText[s.event!] ?? s.event!,
+            ts: 'just now',
+          }, ...prev].slice(0, 50))
+          if (eventToast[s.event!]) setToast(eventToast[s.event!])
+        }
         // Post snapshot to backend
         api.postSnapshot({
           childId: CHILD_ID,
@@ -198,7 +218,10 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
   const handleTouch = useCallback(
     (kind: string) => {
       if (bleStatus === 'connected' && bleRef.current) {
-        bleRef.current.sendHug().catch(() => {})
+        const send = kind === 'cheer' ? bleRef.current.sendCheer()
+                   : kind === 'bedtime' ? bleRef.current.sendBedtime()
+                   : bleRef.current.sendHug()
+        send.catch(() => {})
       }
       // Log event to backend
       const textMap: Record<string, string> = {
@@ -277,13 +300,14 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       : undefined,
   }))
 
-  /* ── Map API events → ActivityTape props ── */
-  const tapeEvents = events.map((e) => ({
+  /* ── Map API events → ActivityTape props, merge BLE live events ── */
+  const apiTapeEvents = events.map((e) => ({
     id: String(e.id),
     kind: e.kind,
     text: e.text,
     ts: timeAgo(e.ts),
   }))
+  const tapeEvents = [...bleEvents, ...apiTapeEvents]
 
   /* ── Render ── */
 

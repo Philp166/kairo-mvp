@@ -111,6 +111,14 @@ export class KairoBle {
     await this.sendCommand({ cmd: 'parent_touch' })
   }
 
+  async sendCheer(): Promise<void> {
+    await this.sendCommand({ cmd: 'cheer' })
+  }
+
+  async sendBedtime(): Promise<void> {
+    await this.sendCommand({ cmd: 'bedtime' })
+  }
+
   async sendTimeSync(): Promise<void> {
     const now = new Date()
     await this.sendCommand({
