@@ -18,12 +18,14 @@ export interface KairoSnapshot {
   state: 'calm' | 'active' | 'sleepy' | 'worried'
   worn: boolean
   event?: string
+  isHistory?: boolean
 }
 
 export type KairoBleStatus = 'idle' | 'connecting' | 'connected' | 'disconnected' | 'unsupported'
 
 type SnapshotListener = (snap: KairoSnapshot) => void
 type StatusListener = (status: KairoBleStatus, msg?: string) => void
+type HistoryDoneListener = () => void
 
 export class KairoBle {
   private device: BluetoothDevice | null = null
@@ -31,6 +33,7 @@ export class KairoBle {
   private commandChar: BluetoothRemoteGATTCharacteristic | null = null
   private snapListener: SnapshotListener | null = null
   private statusListener: StatusListener | null = null
+  private historyDoneListener: HistoryDoneListener | null = null
 
   static isSupported(): boolean {
     return typeof navigator !== 'undefined' && 'bluetooth' in navigator
@@ -42,6 +45,14 @@ export class KairoBle {
 
   onStatus(fn: StatusListener) {
     this.statusListener = fn
+  }
+
+  onHistoryDone(fn: HistoryDoneListener) {
+    this.historyDoneListener = fn
+  }
+
+  getDeviceId(): string | null {
+    return this.device?.id ?? null
   }
 
   async connect(): Promise<void> {
@@ -139,6 +150,12 @@ export class KairoBle {
     const text = new TextDecoder().decode(value)
     try {
       const raw = JSON.parse(text)
+
+      if (raw.type === 'history_done') {
+        this.historyDoneListener?.()
+        return
+      }
+
       const parsed: KairoSnapshot = {
         ts: raw.ts ?? Date.now(),
         hr: raw.hr ?? 0,
@@ -150,6 +167,7 @@ export class KairoBle {
         state: raw.state ?? 'calm',
         worn: raw.worn ?? false,
         event: raw.event,
+        isHistory: raw.type === 'history',
       }
       this.snapListener?.(parsed)
     } catch {

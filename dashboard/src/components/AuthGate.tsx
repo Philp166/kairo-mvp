@@ -11,6 +11,18 @@ export function useAuthEmail() {
     : 'Parent'
 }
 
+export function getPairedDeviceId(): string | null {
+  return localStorage.getItem('kairo_device_id')
+}
+
+export function setPairedDeviceId(id: string) {
+  localStorage.setItem('kairo_device_id', id)
+}
+
+export function clearPairedDevice() {
+  localStorage.removeItem('kairo_device_id')
+}
+
 interface AuthGateProps {
   children: React.ReactNode
 }

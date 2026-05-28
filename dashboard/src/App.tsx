@@ -15,6 +15,7 @@ import ActivityTape from './components/ActivityTape'
 import { WatchPage } from './components/WatchPage'
 import { BriefPage } from './components/BriefPage'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
+import { setPairedDeviceId } from './components/AuthGate'
 import type { SparkState } from './components/Spark'
 
 /* ── Helpers ──────────────────────────────────────────── */
@@ -101,6 +102,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
   /* ── BLE state ── */
   const [bleStatus, setBleStatus] = useState<KairoBleStatus>('idle')
   const [liveSnap, setLiveSnap] = useState<KairoSnapshot | null>(null)
+  const [historySnaps, setHistorySnaps] = useState<KairoSnapshot[]>([])
   const bleRef = useRef<KairoBle | null>(null)
 
   /* ── UI state ── */
@@ -151,9 +153,22 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
     if (!bleRef.current) {
       const b = new KairoBle()
       b.onSnapshot((s) => {
+        if (s.isHistory) {
+          setHistorySnaps(prev => [...prev, s])
+          api.postSnapshot({
+            childId: CHILD_ID,
+            hr: s.hr || undefined,
+            spo2: s.spo2 || undefined,
+            tempC: s.tempC || undefined,
+            steps: s.steps || undefined,
+            battery: s.battery || undefined,
+            state: s.state,
+          }).catch(() => {})
+          return
+        }
+
         setLiveSnap(s)
         setSparkState(s.state as SparkState)
-        // Handle BLE events (sos, goal_reached, etc.)
         if (s.event) {
           const eventText: Record<string, string> = {
             sos: 'SOS triggered on band',
@@ -172,7 +187,6 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
           }, ...prev].slice(0, 50))
           if (eventToast[s.event!]) setToast(eventToast[s.event!])
         }
-        // Post snapshot to backend
         api.postSnapshot({
           childId: CHILD_ID,
           hr: s.hr || undefined,
@@ -181,9 +195,23 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
           steps: s.steps || undefined,
           battery: s.battery || undefined,
           state: s.state,
-        }).catch(() => {}) // fire-and-forget
+        }).catch(() => {})
       })
-      b.onStatus((status) => setBleStatus(status))
+      b.onStatus((status, _msg) => {
+        setBleStatus(status)
+        if (status === 'connected') {
+          const devId = b.getDeviceId()
+          if (devId) setPairedDeviceId(devId)
+        }
+      })
+      b.onHistoryDone(() => {
+        const count = historySnaps.length
+        if (count > 0) {
+          setToast({ glyph: '↓', title: 'SYNC DONE', sub: `${count} cached readings synced`, hap: 'HAP-02' })
+          setHistorySnaps([])
+          fetchAll()
+        }
+      })
       bleRef.current = b
     }
     try {
