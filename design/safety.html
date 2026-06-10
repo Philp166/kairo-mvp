@@ -1,0 +1,570 @@
+<!doctype html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Kairo · Safety Center · Phase 5</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ─── THEME TOKENS (shared with Parent Dashboard) ──────────── */
+:root, [data-theme="light"] {
+  --bg:        #FEFCF9;
+  --surface:   #F7F3ED;
+  --surface-2: #F0EBE0;
+  --line:      #E8E0D4;
+  --line-2:    #D8CFBE;
+  --ink:       #1A1538;
+  --ink-2:     #3D365E;
+  --muted:     #8C8279;
+  --accent:    #D85A30;
+  --accent-2:  #E27A53;
+  --lavender:  #9B8EC4;
+  --ok:        #5A9A6B;
+  --alert:     #D84130;
+  --glow: 0 0 0 rgba(0,0,0,0);
+}
+[data-theme="dark"] {
+  --bg:        #0B0820;
+  --surface:   #15102E;
+  --surface-2: #1E1840;
+  --line:      #261E48;
+  --line-2:    #3A2F66;
+  --ink:       #F0EBE0;
+  --ink-2:     #BFB6D9;
+  --muted:     #6A6190;
+  --accent:    #FF6B3D;
+  --accent-2:  #FF8559;
+  --lavender:  #B5A8E0;
+  --ok:        #6FBA82;
+  --alert:     #FF4B30;
+  --glow: 0 0 28px rgba(255,107,61,0.35);
+}
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0; padding: 0;
+  background-color: var(--bg) !important;
+  color: var(--ink);
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  transition: background 240ms ease, color 240ms ease;
+}
+.mono { font-family: 'JetBrains Mono', ui-monospace, monospace; letter-spacing: 0.06em; text-transform: uppercase; font-size: 11px; font-weight: 500; }
+.mono.dim { color: var(--muted); }
+.mono.accent { color: var(--accent); }
+.mono.ok { color: var(--ok); }
+
+.page { max-width: 1320px; margin: 0 auto; padding: 22px 32px 80px; }
+
+/* ─── HEADER ───────────────────────────────────────────────── */
+.dash-header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  padding: 12px 0 24px;
+  margin-bottom: 32px;
+  border-bottom: 1px solid var(--line);
+}
+.brand { display: flex; align-items: baseline; gap: 14px; }
+.brand-mark { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 13px; letter-spacing: 0.3em; text-transform: uppercase; position: relative; padding-left: 16px; }
+.brand-mark::before { content: ''; position: absolute; left: 0; top: 50%; transform: translateY(-50%); width: 6px; height: 6px; background: var(--accent); border-radius: 1px; box-shadow: var(--glow); }
+.brand-sub { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+.dash-header-center { display: flex; justify-content: center; }
+.dash-header-right { display: flex; gap: 12px; align-items: center; justify-content: flex-end; }
+
+.child-chip { display: flex; align-items: center; gap: 10px; padding: 6px 14px 6px 6px; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; }
+.child-chip-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--accent); color: var(--bg); display: grid; place-items: center; font-weight: 600; font-size: 14px; }
+.child-chip-name { font-size: 13px; font-weight: 500; line-height: 1; }
+.child-chip-meta { font-size: 9px; color: var(--muted); line-height: 1.2; margin-top: 2px; }
+.child-chip-status { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); margin-left: 4px; }
+
+.back-link { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-decoration: none; padding: 6px 12px; border: 1px solid var(--line); border-radius: 999px; letter-spacing: 0.1em; text-transform: uppercase; transition: all 180ms; cursor: pointer; background: transparent; }
+.back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ─── SECTION HEAD ─────────────────────────────────────────── */
+.section { margin: 36px 0; }
+.section-head { display: flex; align-items: baseline; gap: 18px; margin-bottom: 22px; padding-bottom: 12px; border-bottom: 1px dashed var(--line); }
+.section-num { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.2em; color: var(--accent); text-transform: uppercase; }
+.section-title { font-size: 20px; font-weight: 500; letter-spacing: -0.02em; }
+.section-sub { color: var(--muted); font-size: 12px; margin-left: auto; }
+
+/* ─── HERO ─────────────────────────────────────────────────── */
+.hero-panel {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 50px;
+  padding: 28px 32px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  position: relative;
+  margin-bottom: 36px;
+  align-items: center;
+}
+.hero-panel::before, .hero-panel::after {
+  content: '';
+  position: absolute;
+  width: 16px; height: 16px;
+  border: 1.5px solid var(--accent);
+}
+.hero-panel::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.hero-panel::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+
+.hero-tags { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.hero-tags .ok-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.hero-title { font-size: clamp(36px, 4.5vw, 56px); font-weight: 500; letter-spacing: -0.03em; line-height: 1; margin: 14px 0 8px; }
+.hero-sub { font-size: 17px; color: var(--ink-2); max-width: 620px; margin: 0 0 18px; line-height: 1.4; }
+.hero-stats { display: flex; gap: 10px; flex-wrap: wrap; }
+.hero-stat { display: flex; align-items: baseline; gap: 8px; padding: 8px 14px; background: var(--bg); border: 1px solid var(--line); }
+.hero-stat b { font-family: 'JetBrains Mono', monospace; font-size: 16px; font-weight: 500; }
+.hero-stat span { font-size: 9px; color: var(--muted); letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* zone badge */
+.zone-badge { position: relative; width: 190px; height: 190px; }
+.zone-badge svg { display: block; }
+.zb-pulse { animation: zb-pulse 2.2s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes zb-pulse { 0% { r: 14; opacity: 0.9; } 100% { r: 70; opacity: 0; } }
+
+/* ─── MAP ──────────────────────────────────────────────────── */
+.panel-card { position: relative; background: var(--surface); border: 1px solid var(--line); padding: 20px 24px; }
+.panel-card::before, .panel-card::after { content: ''; position: absolute; width: 12px; height: 12px; border: 1.5px solid var(--accent); }
+.panel-card::before { top: -1px; left: -1px; border-right: 0; border-bottom: 0; }
+.panel-card::after  { bottom: -1px; right: -1px; border-left: 0; border-top: 0; }
+.panel-card-head { display: flex; gap: 8px; align-items: baseline; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px dashed var(--line-2); }
+
+.map-svg { display: block; width: 100%; height: auto; background: var(--bg); border: 1px solid var(--line); }
+.map-pulse { animation: map-pulse 2.2s ease-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes map-pulse { 0% { r: 7; opacity: 0.9; } 100% { r: 26; opacity: 0; } }
+.map-route { stroke-dasharray: 6 7; animation: route-flow 1.6s linear infinite; }
+@keyframes route-flow { to { stroke-dashoffset: -13; } }
+.map-meta { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); font-size: 10px; flex-wrap: wrap; }
+.map-meta .sep { color: var(--line-2); }
+
+/* ─── ZONES ────────────────────────────────────────────────── */
+.zone-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.zone-card { position: relative; background: var(--surface); border: 1px solid var(--line); padding: 18px; min-height: 170px; display: flex; flex-direction: column; transition: all 200ms ease; }
+.zone-card:hover { transform: translateY(-2px); border-color: var(--line-2); }
+.zone-card.active-zone { border-color: var(--ok); }
+.zone-card.active-zone::before { content: ''; position: absolute; top: 0; left: 0; width: 30px; height: 2px; background: var(--ok); }
+.zone-card:not(.active-zone):not(.zone-add)::before { content: ''; position: absolute; top: 0; left: 0; width: 30px; height: 2px; background: var(--accent); }
+.zone-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.zone-glyph { font-size: 22px; line-height: 1; }
+.zone-name { font-size: 17px; font-weight: 500; margin: 2px 0 4px; }
+.zone-meta { font-size: 11px; color: var(--muted); line-height: 1.5; }
+.zone-foot { margin-top: auto; padding-top: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 9px; }
+.zone-state { display: inline-flex; gap: 6px; align-items: center; }
+.zone-state .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+.zone-state.idle .dot { background: var(--muted); box-shadow: none; }
+.zone-add { border-style: dashed; align-items: center; justify-content: center; color: var(--muted); cursor: pointer; }
+.zone-add:hover { color: var(--accent); border-color: var(--accent); }
+.zone-add .plus { font-size: 28px; line-height: 1; margin-bottom: 8px; }
+
+/* ─── EVENT TAPE ───────────────────────────────────────────── */
+.tape-strip { display: flex; flex-direction: column; }
+.tape-row { display: grid; grid-template-columns: 70px 28px 1fr 110px 90px; gap: 14px; align-items: center; padding: 12px 4px; border-bottom: 1px dashed var(--line-2); position: relative; }
+.tape-row:last-child { border-bottom: 0; }
+.tape-row::before {
+  content: '';
+  position: absolute;
+  left: -8px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 4px;
+  background: var(--accent); opacity: 0.6;
+  border-radius: 50%;
+}
+.tape-time { font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+.tape-glyph { font-size: 14px; color: var(--accent); text-align: center; }
+.tape-msg { font-size: 13px; color: var(--ink); line-height: 1.3; }
+.tape-zone { font-size: 9px; text-align: right; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+.tape-sig { font-size: 9px; text-align: right; }
+.tape-row.geo-in  .tape-glyph { color: var(--ok); }
+.tape-row.geo-out .tape-glyph { color: var(--lavender); }
+.tape-row.spike   .tape-glyph { color: var(--alert); }
+.tape-row.sos-test { background: linear-gradient(90deg, color-mix(in oklab, var(--accent) 8%, transparent), transparent); }
+
+/* ─── SOS ──────────────────────────────────────────────────── */
+.split-1-1 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.sos-steps { display: flex; flex-direction: column; gap: 0; }
+.sos-step { display: grid; grid-template-columns: 44px 1fr auto; gap: 14px; align-items: center; padding: 13px 4px; border-bottom: 1px dashed var(--line-2); }
+.sos-step:last-child { border-bottom: 0; }
+.sos-step-num { font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--accent); }
+.sos-step-title { font-size: 14px; font-weight: 500; }
+.sos-step-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+.sos-step-tag { font-size: 9px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; }
+
+.sos-log-row { display: flex; justify-content: space-between; align-items: baseline; padding: 12px 4px; border-bottom: 1px dashed var(--line-2); font-size: 13px; }
+.sos-log-row:last-child { border-bottom: 0; }
+.sos-test-btn {
+  margin-top: 16px;
+  width: 100%;
+  padding: 14px;
+  background: var(--accent);
+  color: #FAF6EC;
+  border: 0;
+  font: 600 12px 'JetBrains Mono', monospace;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 180ms ease;
+}
+.sos-test-btn:hover { background: var(--accent-2); box-shadow: 0 8px 24px -8px var(--accent); }
+.sos-test-btn:active { transform: translateY(1px); }
+
+/* ─── TOAST ────────────────────────────────────────────────── */
+.toast {
+  position: fixed;
+  right: 32px; bottom: 32px;
+  display: none; align-items: center; gap: 16px;
+  padding: 14px 18px;
+  background: var(--surface); border: 1px solid var(--accent);
+  box-shadow: 0 12px 30px -10px rgba(255,107,61,0.3);
+  z-index: 100;
+}
+.toast.show { display: flex; animation: toast-in 360ms cubic-bezier(.3,1.2,.3,1); }
+@keyframes toast-in { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.toast-glyph { font-size: 24px; color: var(--accent); }
+.toast-title { font-size: 14px; font-weight: 500; }
+.toast-sub { font-size: 9px; color: var(--muted); margin-top: 2px; }
+
+/* ─── FOOTER ───────────────────────────────────────────────── */
+.footer { margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--line); display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: var(--muted); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; flex-wrap: wrap; gap: 12px; }
+.phase-line { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.phase-pill { padding: 4px 10px; border: 1px solid var(--line); }
+.phase-pill.done { color: var(--muted); }
+.phase-pill.current { color: var(--accent); border-color: var(--accent); }
+
+/* ─── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 980px) {
+  .page { padding: 16px 16px 60px; }
+  .dash-header { grid-template-columns: 1fr auto; }
+  .dash-header-center { display: none; }
+  .hero-panel { grid-template-columns: 1fr; gap: 24px; }
+  .zone-badge { margin: 0 auto; }
+  .zone-grid { grid-template-columns: 1fr 1fr; }
+  .split-1-1 { grid-template-columns: 1fr; }
+  .tape-row { grid-template-columns: 56px 24px 1fr; }
+  .tape-zone, .tape-sig { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ─── HEADER ─────────────────────────────────────────── -->
+  <header class="dash-header">
+    <div class="brand">
+      <span class="brand-mark">Kairo</span>
+      <span class="brand-sub">Safety Center · Phase 5</span>
+    </div>
+    <div class="dash-header-center">
+      <div class="child-chip">
+        <div class="child-chip-avatar">М</div>
+        <div>
+          <div class="child-chip-name">Миша</div>
+          <div class="child-chip-meta">6 лет · NODE_07</div>
+        </div>
+        <div class="child-chip-status"></div>
+      </div>
+    </div>
+    <div class="dash-header-right">
+      <button class="back-link" id="theme-toggle">Тема</button>
+    </div>
+  </header>
+
+  <!-- ─── HERO ───────────────────────────────────────────── -->
+  <div class="hero-panel">
+    <div class="zone-badge">
+      <svg viewBox="0 0 190 190" width="190" height="190" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="95" cy="95" r="88" fill="none" stroke="var(--line-2)" stroke-width="1" stroke-dasharray="3 6"/>
+        <circle cx="95" cy="95" r="64" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.7"/>
+        <circle class="zb-pulse" cx="95" cy="95" r="14" fill="none" stroke="var(--ok)" stroke-width="2"/>
+        <circle cx="95" cy="95" r="9" fill="var(--ok)"/>
+        <circle cx="95" cy="95" r="9" fill="none" stroke="var(--bg)" stroke-width="2"/>
+        <text x="95" y="170" text-anchor="middle" fill="var(--muted)" font-family="JetBrains Mono, monospace" font-size="9" letter-spacing="2">ZONE/SCHOOL</text>
+      </svg>
+    </div>
+    <div>
+      <div class="hero-tags">
+        <span class="mono ok">● В безопасной зоне</span>
+        <span class="mono dim">GPS ±4 м</span>
+        <span class="mono dim">Онлайн · 12 с назад</span>
+      </div>
+      <h1 class="hero-title">Миша в школе</h1>
+      <p class="hero-sub">В зоне «Школа» с 08:34. Утренний маршрут совпал с обычным.
+      Следующее ожидаемое событие — выход из зоны в 15:00.</p>
+      <div class="hero-stats">
+        <div class="hero-stat"><b>68%</b><span>батарея · ~2 дня</span></div>
+        <div class="hero-stat"><b>9</b><span>спутников GPS</span></div>
+        <div class="hero-stat"><b>1.8 км</b><span>трек за сегодня</span></div>
+        <div class="hero-stat"><b>v0.4.2</b><span>прошивка</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── 01 / MAP ───────────────────────────────────────── -->
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">01 / Карта</span>
+      <span class="section-title">Маршрут сегодня</span>
+      <span class="section-sub">Дом → Школа · 08:12–08:34 · 1.8 км</span>
+    </div>
+    <div class="panel-card">
+      <svg class="map-svg" viewBox="0 0 1000 400" xmlns="http://www.w3.org/2000/svg">
+        <!-- grid -->
+        <g stroke="var(--line)" stroke-width="1" opacity="0.5">
+          <line x1="0" y1="80"  x2="1000" y2="80"/>
+          <line x1="0" y1="160" x2="1000" y2="160"/>
+          <line x1="0" y1="240" x2="1000" y2="240"/>
+          <line x1="0" y1="320" x2="1000" y2="320"/>
+          <line x1="125" y1="0" x2="125" y2="400"/>
+          <line x1="250" y1="0" x2="250" y2="400"/>
+          <line x1="375" y1="0" x2="375" y2="400"/>
+          <line x1="500" y1="0" x2="500" y2="400"/>
+          <line x1="625" y1="0" x2="625" y2="400"/>
+          <line x1="750" y1="0" x2="750" y2="400"/>
+          <line x1="875" y1="0" x2="875" y2="400"/>
+        </g>
+        <!-- streets -->
+        <g stroke="var(--line-2)" stroke-width="2.5" fill="none" opacity="0.8">
+          <path d="M 60 340 L 400 340 L 400 120 L 980 120"/>
+          <path d="M 180 400 L 180 200 L 560 200 L 560 30"/>
+          <path d="M 0 260 L 760 260 L 760 60"/>
+          <path d="M 660 400 L 660 200 L 900 200"/>
+        </g>
+        <!-- geofences -->
+        <g font-family="JetBrains Mono, monospace" font-size="10" letter-spacing="2">
+          <circle cx="180" cy="300" r="68" fill="var(--lavender)" opacity="0.07"/>
+          <circle cx="180" cy="300" r="68" fill="none" stroke="var(--lavender)" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.7"/>
+          <text x="180" y="385" text-anchor="middle" fill="var(--lavender)">ДОМ · 150 м</text>
+
+          <circle cx="700" cy="150" r="88" fill="var(--ok)" opacity="0.08"/>
+          <circle cx="700" cy="150" r="88" fill="none" stroke="var(--ok)" stroke-width="1.5" stroke-dasharray="5 5"/>
+          <text x="700" y="42" text-anchor="middle" fill="var(--ok)">ШКОЛА · 200 м</text>
+
+          <circle cx="890" cy="320" r="52" fill="var(--muted)" opacity="0.05"/>
+          <circle cx="890" cy="320" r="52" fill="none" stroke="var(--muted)" stroke-width="1.5" stroke-dasharray="4 6" opacity="0.6"/>
+          <text x="890" y="392" text-anchor="middle" fill="var(--muted)">БАБУШКА · 100 м</text>
+        </g>
+        <!-- route -->
+        <path class="map-route" d="M 180 300 L 180 260 L 400 260 L 400 200 L 560 200 L 560 120 L 668 120 L 690 140"
+              fill="none" stroke="var(--accent)" stroke-width="2.5"/>
+        <!-- waypoints -->
+        <g font-family="JetBrains Mono, monospace" font-size="10">
+          <circle cx="180" cy="300" r="5" fill="var(--lavender)"/>
+          <text x="150" y="282" text-anchor="end" fill="var(--muted)">08:12 вышел</text>
+          <circle cx="400" cy="260" r="3.5" fill="var(--accent)"/>
+          <circle cx="560" cy="200" r="3.5" fill="var(--accent)"/>
+          <circle cx="560" cy="120" r="3.5" fill="var(--accent)"/>
+          <text x="585" y="232" fill="var(--muted)">08:27 перекрёсток</text>
+        </g>
+        <!-- current position -->
+        <circle class="map-pulse" cx="700" cy="150" r="7" fill="none" stroke="var(--ok)" stroke-width="2"/>
+        <circle cx="700" cy="150" r="7" fill="var(--ok)" stroke="var(--bg)" stroke-width="2"/>
+        <text x="722" y="156" font-family="JetBrains Mono, monospace" font-size="11" fill="var(--ink)">МИША · 08:34</text>
+      </svg>
+      <div class="map-meta mono dim">
+        <span class="ok">● GPS-фикс</span><span class="sep">/</span>
+        <span>точность ±4 м</span><span class="sep">/</span>
+        <span>9 спутников</span><span class="sep">/</span>
+        <span>обновлено 12 с назад</span><span class="sep">/</span>
+        <span>история хранится 30 дней</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 02 / ZONES ─────────────────────────────────────── -->
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">02 / Геозоны</span>
+      <span class="section-title">Безопасные зоны</span>
+      <span class="section-sub">Уведомление при входе и выходе · 3 активных</span>
+    </div>
+    <div class="zone-grid">
+      <div class="zone-card active-zone">
+        <div class="zone-head"><span class="zone-glyph">🏫</span><span class="mono ok">Миша здесь</span></div>
+        <div class="zone-name">Школа</div>
+        <div class="zone-meta">Радиус 200 м · будни 08:00–15:00<br>Вход 08:34 · ожидаемый выход 15:00</div>
+        <div class="zone-foot">
+          <span class="zone-state mono dim"><span class="dot"></span>Активна</span>
+          <span class="mono dim">GEO_02</span>
+        </div>
+      </div>
+      <div class="zone-card">
+        <div class="zone-head"><span class="zone-glyph">🏠</span></div>
+        <div class="zone-name">Дом</div>
+        <div class="zone-meta">Радиус 150 м · круглосуточно<br>Выход сегодня 08:12</div>
+        <div class="zone-foot">
+          <span class="zone-state mono dim"><span class="dot"></span>Активна</span>
+          <span class="mono dim">GEO_01</span>
+        </div>
+      </div>
+      <div class="zone-card">
+        <div class="zone-head"><span class="zone-glyph">👵</span></div>
+        <div class="zone-name">Бабушка</div>
+        <div class="zone-meta">Радиус 100 м · сб–вс<br>Последний визит — 07.06, 14:20</div>
+        <div class="zone-foot">
+          <span class="zone-state idle mono dim"><span class="dot"></span>Вне расписания</span>
+          <span class="mono dim">GEO_03</span>
+        </div>
+      </div>
+      <div class="zone-card zone-add" id="zone-add">
+        <div class="plus">+</div>
+        <div class="mono dim">Добавить зону</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 03 / EVENTS ────────────────────────────────────── -->
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">03 / Журнал</span>
+      <span class="section-title">События за сегодня</span>
+      <span class="section-sub">10 июня · все события доставлены на телефон</span>
+    </div>
+    <div class="panel-card">
+      <div class="tape-strip">
+        <div class="tape-row">
+          <span class="tape-time">07:42</span><span class="tape-glyph">◉</span>
+          <span class="tape-msg">Браслет надет — пульс и шаги пишутся</span>
+          <span class="tape-zone">ДОМ</span><span class="tape-sig mono ok">OK</span>
+        </div>
+        <div class="tape-row geo-out">
+          <span class="tape-time">08:12</span><span class="tape-glyph">↗</span>
+          <span class="tape-msg">Вышел из зоны «Дом» — маршрут в школу начат</span>
+          <span class="tape-zone">ДОМ → ···</span><span class="tape-sig mono ok">PUSH 1.8 c</span>
+        </div>
+        <div class="tape-row geo-in">
+          <span class="tape-time">08:34</span><span class="tape-glyph">↘</span>
+          <span class="tape-msg">Вошёл в зону «Школа» — маршрут совпал с обычным</span>
+          <span class="tape-zone">ШКОЛА</span><span class="tape-sig mono ok">PUSH 2.1 c</span>
+        </div>
+        <div class="tape-row">
+          <span class="tape-time">12:05</span><span class="tape-glyph">✉</span>
+          <span class="tape-msg">Миша отправил пресет «Всё хорошо» одним касанием</span>
+          <span class="tape-zone">ШКОЛА</span><span class="tape-sig mono ok">OK</span>
+        </div>
+        <div class="tape-row spike">
+          <span class="tape-time">13:21</span><span class="tape-glyph">♥</span>
+          <span class="tape-msg">Пик пульса 142 уд/мин — совпадает с уроком физкультуры, тревога не поднята</span>
+          <span class="tape-zone">ШКОЛА</span><span class="tape-sig mono dim">АВТОФИЛЬТР</span>
+        </div>
+        <div class="tape-row">
+          <span class="tape-time">14:10</span><span class="tape-glyph">⌁</span>
+          <span class="tape-msg">Синхронизация по BLE — данные сна и активности выгружены</span>
+          <span class="tape-zone">ШКОЛА</span><span class="tape-sig mono ok">OK</span>
+        </div>
+        <div class="tape-row sos-test">
+          <span class="tape-time">06.06</span><span class="tape-glyph">⚠</span>
+          <span class="tape-msg">Плановый тест SOS — доставка push за 2.4 с, локация передавалась каждые 5 с</span>
+          <span class="tape-zone">ДОМ</span><span class="tape-sig mono accent">ТЕСТ OK</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ─── 04 / SOS ───────────────────────────────────────── -->
+  <section class="section">
+    <div class="section-head">
+      <span class="section-num">04 / SOS</span>
+      <span class="section-title">Протокол тревоги</span>
+      <span class="section-sub">Срабатывает удержанием кнопки 3 секунды</span>
+    </div>
+    <div class="split-1-1">
+      <div class="panel-card">
+        <div class="panel-card-head">
+          <span class="mono accent">ПОСЛЕДОВАТЕЛЬНОСТЬ</span>
+          <span class="section-sub">от нажатия до звонка</span>
+        </div>
+        <div class="sos-steps">
+          <div class="sos-step">
+            <span class="sos-step-num">01</span>
+            <div><div class="sos-step-title">Удержание кнопки 3 с</div><div class="sos-step-sub">Вибро-подтверждение на браслете, случайные нажатия отсекаются</div></div>
+            <span class="sos-step-tag">T+0 c</span>
+          </div>
+          <div class="sos-step">
+            <span class="sos-step-num">02</span>
+            <div><div class="sos-step-title">Push всем опекунам</div><div class="sos-step-sub">Мама, папа — с точкой на карте и зарядом браслета</div></div>
+            <span class="sos-step-tag">&lt; 5 c</span>
+          </div>
+          <div class="sos-step">
+            <span class="sos-step-num">03</span>
+            <div><div class="sos-step-title">Локация каждые 5 с</div><div class="sos-step-sub">Усиленный трекинг в течение 15 минут, история сохраняется</div></div>
+            <span class="sos-step-tag">15 мин</span>
+          </div>
+          <div class="sos-step">
+            <span class="sos-step-num">04</span>
+            <div><div class="sos-step-title">Спарк успокаивает</div><div class="sos-step-sub">Персонаж на экране говорит, что родители уже в курсе</div></div>
+            <span class="sos-step-tag">экран</span>
+          </div>
+        </div>
+      </div>
+      <div class="panel-card">
+        <div class="panel-card-head">
+          <span class="mono accent">ЖУРНАЛ SOS</span>
+          <span class="section-sub">боевых тревог не было</span>
+        </div>
+        <div>
+          <div class="sos-log-row"><span>Плановый тест</span><span class="mono dim">06.06 · PUSH 2.4 c · OK</span></div>
+          <div class="sos-log-row"><span>Плановый тест</span><span class="mono dim">23.05 · PUSH 2.1 c · OK</span></div>
+          <div class="sos-log-row"><span>Первичная настройка</span><span class="mono dim">12.05 · 2 опекуна · OK</span></div>
+        </div>
+        <button class="sos-test-btn" id="sos-test">Запустить тест SOS</button>
+      </div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="phase-line">
+      <span>Фазы дизайна</span>
+      <span class="phase-pill done">01 STYLE</span>
+      <span class="phase-pill done">02 WATCH</span>
+      <span class="phase-pill done">03 SPARK</span>
+      <span class="phase-pill done">04 DASHBOARD</span>
+      <span class="phase-pill current">05 SAFETY</span>
+    </div>
+    <div>Kairo · демо для заказчика · данные статичные</div>
+  </footer>
+
+</div>
+
+<div class="toast" id="toast">
+  <span class="toast-glyph">⚠</span>
+  <div>
+    <div class="toast-title" id="toast-title">Тест SOS запущен</div>
+    <div class="toast-sub" id="toast-sub">PUSH ДОСТАВЛЕН ЗА 2.2 С · ЛОКАЦИЯ КАЖДЫЕ 5 С</div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var toggle = document.getElementById('theme-toggle');
+  toggle.addEventListener('click', function () {
+    var html = document.documentElement;
+    html.setAttribute('data-theme', html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  var toast = document.getElementById('toast');
+  var toastTitle = document.getElementById('toast-title');
+  var toastSub = document.getElementById('toast-sub');
+  var hideTimer = null;
+  function showToast(title, sub) {
+    toastTitle.textContent = title;
+    toastSub.textContent = sub;
+    toast.classList.remove('show');
+    void toast.offsetWidth;
+    toast.classList.add('show');
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () { toast.classList.remove('show'); }, 3500);
+  }
+
+  document.getElementById('sos-test').addEventListener('click', function () {
+    showToast('Тест SOS запущен', 'PUSH ДОСТАВЛЕН ЗА 2.2 С · ЛОКАЦИЯ КАЖДЫЕ 5 С');
+  });
+  document.getElementById('zone-add').addEventListener('click', function () {
+    showToast('Новая зона', 'ДОСТУПНО В ПОЛНОЙ ВЕРСИИ · ДЕМО-РЕЖИМ');
+  });
+})();
+</script>
+</body>
+</html>
