@@ -17,6 +17,19 @@ import { BriefPage } from './components/BriefPage'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
 import { setPairedDeviceId } from './components/AuthGate'
 import type { SparkState } from './components/Spark'
+import {
+  IS_DEMO,
+  DEMO_OVERVIEW,
+  DEMO_EVENTS,
+  DEMO_ZONES,
+  DEMO_SERIES,
+  DEMO_CHILD_NAME,
+  DEMO_PLACE,
+  DEMO_PLACE_DURATION,
+  DEMO_SPARK_SPO2,
+  DEMO_SPARK_TEMP,
+  DEMO_SPARK_STEPS,
+} from './lib/demo'
 
 /* ── Helpers ──────────────────────────────────────────── */
 
@@ -113,6 +126,16 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
 
   /* ── Fetch data from API ── */
   const fetchAll = useCallback(async () => {
+    if (IS_DEMO) {
+      setOverview(DEMO_OVERVIEW)
+      setEvents(DEMO_EVENTS)
+      setZones(DEMO_ZONES)
+      setSeries(DEMO_SERIES)
+      setChildName(DEMO_CHILD_NAME)
+      setSparkState('calm')
+      setApiOk(true)
+      return
+    }
     try {
       const timeout = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('timeout')), 8000)
@@ -149,6 +172,10 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
 
   /* ── BLE ── */
   async function toggleBle() {
+    if (IS_DEMO) {
+      setToast({ glyph: '◉', title: 'DEMO MODE', sub: 'Static showcase data · band pairing disabled', hap: 'DEMO' })
+      return
+    }
     if (bleStatus === 'connected' || bleStatus === 'connecting') {
       await bleRef.current?.disconnect()
       setLiveSnap(null)
@@ -261,11 +288,21 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
         cheer: `You cheered ${childName} on`,
         bedtime: `Bedtime signal sent to ${childName}`,
       }
-      api.postEvent({
-        childId: CHILD_ID,
-        kind: kind === 'hug' ? 'parent_touch' : kind,
-        text: textMap[kind] ?? `Touch: ${kind}`,
-      }).then(() => fetchAll()).catch(() => {})
+      if (IS_DEMO) {
+        const tapeKind = kind === 'hug' ? 'parent_touch' : kind === 'cheer' ? 'goal' : kind === 'bedtime' ? 'sleep_start' : kind
+        setBleEvents(prev => [{
+          id: `demo-${Date.now()}`,
+          kind: tapeKind,
+          text: textMap[kind] ?? `Touch: ${kind}`,
+          ts: 'just now',
+        }, ...prev].slice(0, 50))
+      } else {
+        api.postEvent({
+          childId: CHILD_ID,
+          kind: kind === 'hug' ? 'parent_touch' : kind,
+          text: textMap[kind] ?? `Touch: ${kind}`,
+        }).then(() => fetchAll()).catch(() => {})
+      }
 
       const map: Record<string, ToastData> = {
         hug:     { glyph: '♥', title: t('toast.hug.title'),   sub: t('toast.hug.sub'),   hap: 'HAP-03' },
@@ -297,7 +334,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       delta: hasData ? t('v.spo2.delta') : 'NO DATA YET',
       status: spo2 != null ? (spo2 < 94 ? 'alert' : spo2 < 96 ? 'warn' : 'norm') : 'norm',
       color: 'var(--ok)',
-      data: [],
+      data: IS_DEMO ? DEMO_SPARK_SPO2 : [],
     },
     {
       slot: 'TEMP',
@@ -307,7 +344,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       delta: hasData ? t('v.temp.delta') : 'NO DATA YET',
       status: tempC != null ? (Math.abs(tempDelta) > 0.5 ? 'warn' : 'norm') : 'norm',
       color: 'var(--lavender)',
-      data: [],
+      data: IS_DEMO ? DEMO_SPARK_TEMP : [],
     },
     {
       slot: 'STEP',
@@ -317,7 +354,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       delta: hasData ? t('v.step.delta') : 'NO DATA YET',
       status: 'norm',
       color: 'var(--ink-2)',
-      data: [],
+      data: IS_DEMO ? DEMO_SPARK_STEPS : [],
     },
   ]
 
@@ -381,7 +418,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       <DashboardHeader
         lang={lang}
         onLang={onLang}
-        ble={bleStatus === 'connected' ? 'live' : hasData ? 'idle' : 'idle'}
+        ble={bleStatus === 'connected' || IS_DEMO ? 'live' : 'idle'}
         onToggleBle={toggleBle}
         childName={childName}
         childInitial={childName[0] ?? '?'}
@@ -451,8 +488,8 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
           {radarZones.length > 0 ? (
             <LocationRadar
               zones={radarZones}
-              currentPlace={'—'}
-              currentDuration={snap?.ts ? timeAgo(snap.ts) : '—'}
+              currentPlace={IS_DEMO ? DEMO_PLACE : '—'}
+              currentDuration={IS_DEMO ? DEMO_PLACE_DURATION : snap?.ts ? timeAgo(snap.ts) : '—'}
               childName={childName}
               lastSync={lastSync}
             />

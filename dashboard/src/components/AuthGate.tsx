@@ -1,4 +1,5 @@
 import { useState, useEffect, createContext, useContext } from 'react'
+import { IS_DEMO } from '../lib/demo'
 
 const LogoutContext = createContext<(() => void) | null>(null)
 export function useLogout() {
@@ -48,6 +49,7 @@ export function AuthGate({ children }: AuthGateProps) {
     setLoggedIn(false)
   }
 
+  if (IS_DEMO) return <>{children}</>
   if (checking) return null
   if (!loggedIn) return <LoginScreen onLogin={handleLogin} />
   return <LogoutContext.Provider value={handleLogout}>{children}</LogoutContext.Provider>
