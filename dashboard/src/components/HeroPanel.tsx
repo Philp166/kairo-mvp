@@ -85,7 +85,7 @@ function TouchCartridge({ glyph, label, sub, hap, primary, onClick }: TouchCartr
       onClick={trigger}
     >
       <div className="cart-slot">
-        <span className="cart-glyph">{glyph}</span>
+        <span className="cart-glyph">{glyph + '︎'}</span>
         <div className="cart-info">
           <span className="cart-label">{label}</span>
           <span className="cart-sub mono">{sub}</span>
@@ -148,11 +148,12 @@ export function HeroPanel({
             <span className="accent">
               {scrubHour.toString().padStart(2, '0')}:00
             </span>
-            <span>&middot;</span>
-            <span>
-              {lang === 'ru' ? scrubMoment?.noteRu : scrubMoment?.note}
-            </span>
-            <span className="dim">&middot; {t('hero.scrub.hint')}</span>
+            {scrubMoment && (
+              <>
+                <span>&middot;</span>
+                <span>{lang === 'ru' ? scrubMoment.noteRu : scrubMoment.note}</span>
+              </>
+            )}
           </div>
         )}
 

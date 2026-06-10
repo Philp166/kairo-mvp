@@ -75,7 +75,7 @@ export default function ActivityTape({ events }: ActivityTapeProps) {
           return (
             <div key={e.id} className={`tape-row tape-${m.tapeKind}`}>
               <div className="tape-time mono">{e.ts}</div>
-              <div className="tape-glyph">{m.glyph}</div>
+              <div className="tape-glyph">{m.glyph + '︎'}</div>
               <div className="tape-msg">{e.text}</div>
               <div className="tape-hap mono dim">{m.hap}</div>
               <div className="tape-waveform">
