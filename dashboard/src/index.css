@@ -370,11 +370,16 @@ body {
   .hero-panel { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
   .vital-bank { grid-template-columns: repeat(2, 1fr); }
   .split-3-1, .split-1-1 { grid-template-columns: 1fr; }
-  .tape-row { grid-template-columns: 60px 1fr; }
+  .tape-row { grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; }
   .tape-row .tape-hap, .tape-row .tape-waveform { display: none; }
+  .tape-row .tape-glyph { grid-column: 1; grid-row: 1; text-align: left; }
+  .tape-row .tape-msg   { grid-column: 2; grid-row: 1; }
+  .tape-row .tape-time  { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; }
 }
 @media (max-width: 640px) {
   .vital-bank { grid-template-columns: 1fr; }
   .hero-touches-row { flex-direction: column; }
   .cart { min-width: 0; }
+  .section-head { flex-wrap: wrap; row-gap: 4px; }
+  .section-head .section-sub { margin-left: 0; flex-basis: 100%; }
 }
