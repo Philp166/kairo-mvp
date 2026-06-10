@@ -265,6 +265,8 @@ body {
 .tape-row::before { content: ''; position: absolute; left: -8px; top: 50%; transform: translateY(-50%); width: 4px; height: 4px; background: var(--accent); opacity: 0.6; border-radius: 50%; }
 .tape-time { font-size: 10px; color: var(--muted); }
 .tape-glyph { font-size: 14px; color: var(--accent); text-align: center; }
+.tape-glyph svg { display: block; margin: 0 auto; }
+.cart-glyph svg, .toast-glyph svg { display: block; }
 .tape-row.tape-sos .tape-glyph { color: var(--alert); }
 .tape-row.tape-sos { background: linear-gradient(90deg, color-mix(in oklab, var(--alert) 8%, transparent), transparent); }
 .tape-row.tape-touch .tape-glyph { color: var(--accent); }
@@ -372,9 +374,10 @@ body {
   .hero-panel { grid-template-columns: 1fr; gap: 24px; padding: 24px; }
   .vital-bank { grid-template-columns: repeat(2, 1fr); }
   .split-3-1, .split-1-1 { grid-template-columns: 1fr; }
-  .tape-row { grid-template-columns: 22px 1fr auto; gap: 10px; align-items: baseline; }
+  .tape-row { grid-template-columns: 22px 1fr auto; gap: 10px; align-items: start; }
   .tape-row .tape-hap, .tape-row .tape-waveform { display: none; }
   .tape-row .tape-glyph { grid-column: 1; grid-row: 1; text-align: left; }
+  .tape-row .tape-glyph svg { margin: 1px 0 0; }
   .tape-row .tape-msg   { grid-column: 2; grid-row: 1; }
   .tape-row .tape-time  { grid-column: 3; grid-row: 1; text-align: right; white-space: nowrap; }
 }

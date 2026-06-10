@@ -17,6 +17,7 @@ import { BriefPage } from './components/BriefPage'
 import { KairoBle, type KairoSnapshot, type KairoBleStatus } from './lib/bleClient'
 import { setPairedDeviceId } from './components/AuthGate'
 import type { SparkState } from './components/Spark'
+import { HeartIcon, StarIcon, MoonIcon, GoalIcon, AlertIcon, CheckIcon } from './components/icons'
 import {
   IS_DEMO,
   DEMO_OVERVIEW,
@@ -173,7 +174,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
   /* ── BLE ── */
   async function toggleBle() {
     if (IS_DEMO) {
-      setToast({ glyph: '◉', title: 'DEMO MODE', sub: 'Static showcase data · band pairing disabled', hap: 'DEMO' })
+      setToast({ glyph: <GoalIcon width={22} height={22} />, title: 'DEMO MODE', sub: 'Static showcase data · band pairing disabled', hap: 'DEMO' })
       return
     }
     if (bleStatus === 'connected' || bleStatus === 'connecting') {
@@ -207,8 +208,8 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
             goal_reached: 'Step goal reached!',
           }
           const eventToast: Record<string, ToastData> = {
-            sos: { glyph: '!', title: 'SOS ALERT', sub: 'Child activated SOS on band', hap: 'HAP-01' },
-            goal_reached: { glyph: '★', title: 'GOAL REACHED', sub: 'Step goal completed', hap: 'HAP-02' },
+            sos: { glyph: <AlertIcon width={22} height={22} />, title: 'SOS ALERT', sub: 'Child activated SOS on band', hap: 'HAP-01' },
+            goal_reached: { glyph: <StarIcon width={22} height={22} />, title: 'GOAL REACHED', sub: 'Step goal completed', hap: 'HAP-02' },
           }
           setBleEvents(prev => [{
             id: `ble-${Date.now()}`,
@@ -238,7 +239,7 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       b.onHistoryDone(() => {
         const count = historySnaps.length
         if (count > 0) {
-          setToast({ glyph: '↓', title: 'SYNC DONE', sub: `${count} cached readings synced`, hap: 'HAP-02' })
+          setToast({ glyph: <CheckIcon width={22} height={22} />, title: 'SYNC DONE', sub: `${count} cached readings synced`, hap: 'HAP-02' })
           setHistorySnaps([])
           fetchAll()
         }
@@ -305,9 +306,9 @@ function DashboardMain({ lang, onLang }: { lang: Lang; onLang: (l: Lang) => void
       }
 
       const map: Record<string, ToastData> = {
-        hug:     { glyph: '♥', title: t('toast.hug.title'),   sub: t('toast.hug.sub'),   hap: 'HAP-03' },
-        cheer:   { glyph: '★', title: t('toast.cheer.title'), sub: t('toast.cheer.sub'), hap: 'HAP-02' },
-        bedtime: { glyph: '☾', title: t('toast.bed.title'),   sub: t('toast.bed.sub'),   hap: 'HAP-04' },
+        hug:     { glyph: <HeartIcon width={22} height={22} />, title: t('toast.hug.title'),   sub: t('toast.hug.sub'),   hap: 'HAP-03' },
+        cheer:   { glyph: <StarIcon width={22} height={22} />,  title: t('toast.cheer.title'), sub: t('toast.cheer.sub'), hap: 'HAP-02' },
+        bedtime: { glyph: <MoonIcon width={22} height={22} />,  title: t('toast.bed.title'),   sub: t('toast.bed.sub'),   hap: 'HAP-04' },
       }
       setToast(map[kind] ?? map.hug)
     },

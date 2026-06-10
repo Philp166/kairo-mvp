@@ -1,9 +1,9 @@
-import { useEffect } from 'react'
+import { useEffect, type ReactNode } from 'react'
 
 // ── Types ────────────────────────────────────────────────────
 
 export interface ToastData {
-  glyph: string
+  glyph: ReactNode
   title: string
   sub: string
   hap?: string
@@ -59,7 +59,7 @@ export function KairoToast({ toast, onDismiss }: KairoToastProps) {
 
   return (
     <div className="toast">
-      <span className="toast-glyph">{toast.glyph + '︎'}</span>
+      <span className="toast-glyph">{toast.glyph}</span>
       <div className="toast-body">
         <div className="toast-title">{toast.title}</div>
         <div className="toast-sub mono">{toast.sub}</div>

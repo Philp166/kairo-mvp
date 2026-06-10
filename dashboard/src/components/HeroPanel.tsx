@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useT } from '../lib/i18n'
 import { SparkHalo } from './SparkHalo'
+import { HeartIcon, StarIcon, MoonIcon } from './icons'
 
 // ── Types ────────────────────────────────────────────────────
 
@@ -61,7 +62,7 @@ export function CartWave({ hap }: { hap: string }) {
 // ── TouchCartridge — physical-cartridge style button ──────────
 
 interface TouchCartridgeProps {
-  glyph: string
+  glyph: ReactNode
   label: string
   sub: string
   hap: string
@@ -85,7 +86,7 @@ function TouchCartridge({ glyph, label, sub, hap, primary, onClick }: TouchCartr
       onClick={trigger}
     >
       <div className="cart-slot">
-        <span className="cart-glyph">{glyph + '︎'}</span>
+        <span className="cart-glyph">{glyph}</span>
         <div className="cart-info">
           <span className="cart-label">{label}</span>
           <span className="cart-sub mono">{sub}</span>
@@ -162,7 +163,7 @@ export function HeroPanel({
           <div className="hero-touches-label mono dim">{t('hero.send')}</div>
           <div className="hero-touches-row">
             <TouchCartridge
-              glyph="&#9829;"
+              glyph={<HeartIcon width={20} height={20} />}
               label={t('cart.hug')}
               sub={t('cart.hug.sub')}
               hap="HAP-03"
@@ -170,14 +171,14 @@ export function HeroPanel({
               onClick={() => onTouch('hug')}
             />
             <TouchCartridge
-              glyph="&#9733;"
+              glyph={<StarIcon width={20} height={20} />}
               label={t('cart.cheer')}
               sub={t('cart.cheer.sub')}
               hap="HAP-02"
               onClick={() => onTouch('cheer')}
             />
             <TouchCartridge
-              glyph="&#9790;"
+              glyph={<MoonIcon width={20} height={20} />}
               label={t('cart.bed')}
               sub={t('cart.bed.sub')}
               hap="HAP-04"
